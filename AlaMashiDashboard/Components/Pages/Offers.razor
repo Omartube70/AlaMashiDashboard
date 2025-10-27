@@ -1,54 +1,332 @@
 ﻿@page "/offers"
 
-
 <PageTitle>Offer Management</PageTitle>
 
-<div class="page-header centered">
-    <h1 class="page-title">🏷️ Offers</h1>
-    <p class="page-subtitle">Create and control discounts or promotional offers.</p>
+<!-- Page Header -->
+<div class="page-header mb-4 slide-in">
+    <div class="d-flex justify-space-between align-center flex-wrap">
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">🏷️ Offers Management</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Create and control discounts and promotional offers</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenAddDialog"
+                   Class="mt-2 mt-md-0 pulse-button">
+            Create Offer
+        </MudButton>
+    </div>
 </div>
 
 @if (isLoading)
 {
-    <div class="d-flex justify-center mt-4">
-        <MudProgressCircular Indeterminate="true" />
-    </div>
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent>
+            <div class="d-flex flex-column justify-center align-center pa-8">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading offers...</MudText>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 else if (offersList != null && offersList.Any())
 {
-    <MudPaper Elevation="2" Class="mt-4">
-        <MudTable Items="@offersList" Hover="true" Striped="true" Dense="true" Bordered="true">
-            <HeaderContent>
-                <MudTh>ID</MudTh>
-                <MudTh>Title</MudTh>
-                <MudTh>Description</MudTh>
-                <MudTh>Discount (%)</MudTh>
-                <MudTh>Start Date</MudTh>
-                <MudTh>End Date</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="ID">@context.OfferID</MudTd>
-                <MudTd DataLabel="Title">@context.Title</MudTd>
-                <MudTd DataLabel="Description">@context.Description</MudTd>
-                <MudTd DataLabel="Discount (%)">@context.DiscountPercentage</MudTd>
-                <MudTd DataLabel="Start Date">@context.StartDate.ToShortDateString()</MudTd>
-                <MudTd DataLabel="End Date">@context.EndDate.ToShortDateString()</MudTd>
-            </RowTemplate>
-            <PagerContent>
-                <MudTablePager />
-            </PagerContent>
-        </MudTable>
+    <MudCard Elevation="2" Class="data-table-card fade-in">
+        <MudCardContent Class="pa-0">
+            <MudTable Items="@GetFilteredOffers()"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      FixedHeader="true"
+                      Height="calc(100vh - 320px)"
+                      Class="custom-table">
+
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString"
+                                  Placeholder="Search offers..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mr-2"
+                                  Style="max-width: 400px;" />
+                    <MudSpacer />
+                    <MudTooltip Text="Refresh">
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                       OnClick="LoadDataAsync"
+                                       Color="Color.Primary" />
+                    </MudTooltip>
+                    <MudTooltip Text="Filter">
+                        <MudIconButton Icon="@Icons.Material.Filled.FilterList"
+                                       Color="Color.Secondary" />
+                    </MudTooltip>
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<OfferDto, object>(x => x.OfferID)">
+                            ID
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<OfferDto, object>(x => x.Title)">
+                            Title
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Description</MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<OfferDto, object>(x => x.DiscountPercentage)">
+                            Discount
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Period</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="ID">
+                        <MudChip Size="Size.Small" Color="Color.Default">@context.OfferID</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Title">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalOffer"
+                                     Color="Color.Warning"
+                                     Size="Size.Small"
+                                     Class="mr-2" />
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.Title</MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Description">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @(context.Description.Length > 40 ? context.Description.Substring(0, 40) + "..." : context.Description)
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Discount">
+                        <MudChip Size="Size.Small"
+                                 Color="Color.Success"
+                                 Icon="@Icons.Material.Filled.Percent"
+                                 Style="font-weight: bold;">
+                            @context.DiscountPercentage%
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Period">
+                        <div class="d-flex flex-column">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" />
+                                @context.StartDate.ToString("MMM dd, yyyy")
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                <MudIcon Icon="@Icons.Material.Filled.Event" Size="Size.Small" />
+                                @context.EndDate.ToString("MMM dd, yyyy")
+                            </MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        @if (DateTime.Now >= context.StartDate && DateTime.Now <= context.EndDate)
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Success"
+                                     Icon="@Icons.Material.Filled.CheckCircle">
+                                Active
+                            </MudChip>
+                        }
+                        else if (DateTime.Now < context.StartDate)
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Info"
+                                     Icon="@Icons.Material.Filled.Schedule">
+                                Upcoming
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Default"
+                                     Icon="@Icons.Material.Filled.Cancel">
+                                Expired
+                            </MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Actions" Style="text-align: right;">
+                        <MudTooltip Text="View Details">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           OnClick="@(() => ViewOffer(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Edit">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Info"
+                                           OnClick="@(() => OpenEditDialog(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Delete">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => DeleteOffer(context))" />
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Stats Footer -->
+    <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
+        <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Total: <strong>@offersList.Count</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Success">
+                Active: <strong>@offersList.Count(o => DateTime.Now >= o.StartDate && DateTime.Now <= o.EndDate)</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Info">
+                Upcoming: <strong>@offersList.Count(o => DateTime.Now < o.StartDate)</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Default">
+                Expired: <strong>@offersList.Count(o => DateTime.Now > o.EndDate)</strong>
+            </MudText>
+        </div>
     </MudPaper>
 }
 else
 {
-    <MudAlert Severity="Severity.Warning" Class="mt-4">Failed to load offer data or no offers found.</MudAlert>
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center text-center">
+                <MudIcon Icon="@Icons.Material.Filled.LocalOffer"
+                         Size="Size.Large"
+                         Color="Color.Secondary"
+                         Class="mb-4 pulse-icon"
+                         Style="font-size: 5rem;" />
+                <MudText Typo="Typo.h6" Class="mb-2">No Offers Available</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Create your first promotional offer to attract more customers.
+                </MudText>
+                <div class="d-flex gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="OpenAddDialog"
+                               StartIcon="@Icons.Material.Filled.Add">
+                        Create Offer
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               OnClick="LoadDataAsync"
+                               StartIcon="@Icons.Material.Filled.Refresh">
+                        Retry
+                    </MudButton>
+                </div>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 
+<style>
+    .page-header {
+        animation: slideInDown 0.5s ease-out;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .slide-in {
+        animation: slideInLeft 0.5s ease-out;
+    }
+
+    .slide-up {
+        animation: slideUp 0.5s ease-out;
+    }
+
+    .pulse-button {
+        animation: pulse 2s infinite;
+    }
+
+    .pulse-icon {
+        animation: pulse 3s infinite;
+    }
+
+    .data-table-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    ::deep .mud-table-row:hover {
+        background-color: rgba(22, 163, 74, 0.05) !important;
+        transform: scale(1.01);
+    }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+</style>
 
 @code {
     private bool isLoading = true;
     private List<OfferDto>? offersList;
+    private string _searchString = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -62,15 +340,29 @@ else
         isLoading = true;
         StateHasChanged();
 
-
         var offers = await ApiService.GetAsync<ApiService.ApiResponse<List<OfferDto>>>("/api/Offers/All");
         offersList = offers?.Data;
 
         isLoading = false;
         StateHasChanged();
-
     }
 
+    private IEnumerable<OfferDto> GetFilteredOffers()
+    {
+        if (offersList == null) return Enumerable.Empty<OfferDto>();
+        if (string.IsNullOrWhiteSpace(_searchString)) return offersList;
+
+        return offersList.Where(o =>
+            o.Title.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            o.Description.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            o.OfferID.ToString().Contains(_searchString)
+        );
+    }
+
+    private void OpenAddDialog() { }
+    private void OpenEditDialog(OfferDto offer) { }
+    private void ViewOffer(OfferDto offer) { }
+    private async Task DeleteOffer(OfferDto offer) { }
 
     public class OfferDto
     {

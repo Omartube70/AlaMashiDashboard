@@ -1,57 +1,308 @@
 ﻿@page "/categories"
 
-
 <PageTitle>Category Management</PageTitle>
 
-<div class="page-header centered">
-    <h1 class="page-title">📂 Categories</h1>
-    <p class="page-subtitle">Manage and organize all product categories easily.</p>
+<!-- Page Header -->
+<div class="page-header mb-4 slide-in">
+    <div class="d-flex justify-space-between align-center flex-wrap">
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">📂 Categories Management</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Organize and manage product categories</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenAddDialog"
+                   Class="mt-2 mt-md-0 pulse-button">
+            Add Category
+        </MudButton>
+    </div>
 </div>
 
 @if (isLoading)
 {
-    <MudProgressCircular Indeterminate="true" />
+    <!-- Loading State with Animation -->
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent>
+            <div class="d-flex flex-column justify-center align-center pa-8">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading categories...</MudText>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 else if (categoriesList != null && categoriesList.Any())
 {
-    <MudTable Items="@categoriesList" Hover="true" Striped="true" Elevation="2">
-        <HeaderContent>
-            <MudTh>ID</MudTh>
-            <MudTh>Category Name</MudTh>
-            <MudTh>Icon Name</MudTh>
-            <MudTh>Parent Category</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="ID">@context.CategoryId</MudTd>
-            <MudTd DataLabel="اسم الفئة">@context.CategoryName</MudTd>
-            <MudTd DataLabel="اسم الأيقونة">@context.IconName</MudTd>
-            <MudTd DataLabel="ID الأب">@context.ParentId</MudTd>
-        </RowTemplate>
-        <PagerContent>
-            <MudTablePager />
-        </PagerContent>
-    </MudTable>
+    <!-- Categories Table -->
+    <MudCard Elevation="2" Class="data-table-card fade-in">
+        <MudCardContent Class="pa-0">
+            <MudTable Items="@GetFilteredCategories()"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      FixedHeader="true"
+                      Height="calc(100vh - 320px)"
+                      Class="custom-table">
+
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString"
+                                  Placeholder="Search categories..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mr-2"
+                                  Style="max-width: 400px;" />
+                    <MudSpacer />
+                    <MudTooltip Text="Refresh">
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                       OnClick="LoadDataAsync"
+                                       Color="Color.Primary" />
+                    </MudTooltip>
+                    <MudTooltip Text="Export">
+                        <MudIconButton Icon="@Icons.Material.Filled.FileDownload"
+                                       Color="Color.Secondary" />
+                    </MudTooltip>
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<CategoryDto, object>(x => x.CategoryId)">
+                            ID
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<CategoryDto, object>(x => x.CategoryName)">
+                            Category Name
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Icon</MudTh>
+                    <MudTh>Parent Category</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="ID">
+                        <MudChip Size="Size.Small" Color="Color.Default">@context.CategoryId</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Category Name">
+                        <div class="d-flex align-center">
+                            <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined" Class="mr-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Small" />
+                            </MudAvatar>
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.CategoryName</MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Icon">
+                        <MudChip Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.Image">
+                            @context.IconName
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Parent">
+                        @if (context.ParentId.HasValue)
+                        {
+                            <MudChip Size="Size.Small" Color="Color.Secondary">ID: @context.ParentId</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip Size="Size.Small" Color="Color.Default">Root</MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Actions" Style="text-align: right;">
+                        <MudTooltip Text="View Details">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           OnClick="@(() => ViewCategory(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Edit">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Info"
+                                           OnClick="@(() => OpenEditDialog(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Delete">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => DeleteCategory(context))" />
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Stats Footer -->
+    <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
+        <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Class="mr-1" />
+                Total Categories: <strong>@categoriesList.Count</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" Class="mr-1" />
+                Showing: <strong>@GetFilteredCategories().Count()</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Size="Size.Small" Class="mr-1" />
+                Root Categories: <strong>@categoriesList.Count(c => !c.ParentId.HasValue)</strong>
+            </MudText>
+        </div>
+    </MudPaper>
 }
 else
 {
-    <MudText Color="Color.Error">فشل تحميل بيانات الفئات أو لا يوجد فئات.</MudText>
+    <!-- Empty State -->
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center text-center">
+                <MudIcon Icon="@Icons.Material.Filled.FolderOff"
+                         Size="Size.Large"
+                         Color="Color.Secondary"
+                         Class="mb-4 pulse-icon"
+                         Style="font-size: 5rem;" />
+                <MudText Typo="Typo.h6" Class="mb-2">No Categories Found</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Start by creating your first category to organize your products.
+                </MudText>
+                <div class="d-flex gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="OpenAddDialog"
+                               StartIcon="@Icons.Material.Filled.Add">
+                        Add Category
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               OnClick="LoadDataAsync"
+                               StartIcon="@Icons.Material.Filled.Refresh">
+                        Retry
+                    </MudButton>
+                </div>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 
+<style>
+    .page-header {
+        animation: slideInDown 0.5s ease-out;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .slide-in {
+        animation: slideInLeft 0.5s ease-out;
+    }
+
+    .slide-up {
+        animation: slideUp 0.5s ease-out;
+    }
+
+    .pulse-button {
+        animation: pulse 2s infinite;
+    }
+
+    .pulse-icon {
+        animation: pulse 3s infinite;
+    }
+
+    .data-table-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    ::deep .mud-table-toolbar {
+        padding: 1.25rem;
+        background: linear-gradient(135deg, var(--mud-palette-surface) 0%, var(--mud-palette-background) 100%);
+        border-bottom: 2px solid var(--mud-palette-divider);
+    }
+
+    ::deep .mud-table-row {
+        transition: all 0.3s ease;
+    }
+
+        ::deep .mud-table-row:hover {
+            background-color: rgba(22, 163, 74, 0.05) !important;
+            transform: scale(1.01);
+        }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+</style>
 
 @code {
     private bool isLoading = true;
     private List<CategoryDto>? categoriesList;
+    private string _searchString = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
-        {
-            return;
-        }
-
+        if (!firstRender) return;
         await LoadDataAsync();
     }
-
 
     private async Task LoadDataAsync()
     {
@@ -64,23 +315,47 @@ else
 
         isLoading = false;
         StateHasChanged();
-
     }
-    
 
+    private IEnumerable<CategoryDto> GetFilteredCategories()
+    {
+        if (categoriesList == null) return Enumerable.Empty<CategoryDto>();
+
+        if (string.IsNullOrWhiteSpace(_searchString))
+            return categoriesList;
+
+        return categoriesList.Where(c =>
+            c.CategoryName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            c.IconName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            c.CategoryId.ToString().Contains(_searchString)
+        );
+    }
+
+    private void OpenAddDialog()
+    {
+        // TODO: Implement add dialog
+    }
+
+    private void OpenEditDialog(CategoryDto category)
+    {
+        // TODO: Implement edit dialog
+    }
+
+    private void ViewCategory(CategoryDto category)
+    {
+        // TODO: Implement view details
+    }
+
+    private async Task DeleteCategory(CategoryDto category)
+    {
+        // TODO: Implement delete with confirmation
+    }
 
     public class CategoryDto
     {
-        [JsonPropertyName("categoryId")]
-        public int CategoryId { get; set; }
-
-        [JsonPropertyName("categoryName")]
-        public string CategoryName { get; set; }
-
-        [JsonPropertyName("iconName")]
-        public string IconName { get; set; }
-
-        [JsonPropertyName("parentId")]
-        public int? ParentId { get; set; }
+        [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("iconName")] public string IconName { get; set; } = string.Empty;
+        [JsonPropertyName("parentId")] public int? ParentId { get; set; }
     }
 }

@@ -1,103 +1,297 @@
 ﻿@page "/login"
 @using System.Text.RegularExpressions
 
-<PageTitle>Login</PageTitle>
+<PageTitle>Login - Ala Mashi Dashboard</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="mt-16">
+<div class="login-wrapper">
+    <MudContainer MaxWidth="MaxWidth.Small" Class="login-container">
 
-    <div class="login-header">
-        <h1 class="login-title">🔐 Admin Login</h1>
-        <p class="login-subtitle">Only administrators can access the dashboard.</p>
-    </div>
+        <!-- Logo & Header Section -->
+        <div class="login-header fade-in">
+            <div class="logo-circle pulse-icon">
+                <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Large" Color="Color.Surface" />
+            </div>
+            <MudText Typo="Typo.h4" Class="login-title mt-3">Welcome Back</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="login-subtitle">
+                Sign in to access the admin dashboard
+            </MudText>
+        </div>
 
-    <MudCard Elevation="3" Class="login-card">
-        <MudCardContent>
-            <MudForm @ref="_form" >
+        <!-- Login Card -->
+        <MudCard Elevation="0" Class="login-card slide-up">
+            <MudCardContent Class="pa-6">
+                <MudForm @ref="_form">
 
-                <MudTextField @bind-Value="_email"
-                              Label="Email Address"
-                              Variant="Variant.Outlined"
-                              FullWidth="true"
-                              For="@(() => _email)"
-                              Immediate="true"
-                              Required="true"
-                              RequiredError="Email is required"
-                              Validation="@(new Func<string, string>(ValidateEmail))"
-                              Class="mb-3" />
+                    <!-- Email Field -->
+                    <div class="mb-4">
+                        <MudTextField @bind-Value="_email"
+                                      Label="Email Address"
+                                      Variant="Variant.Outlined"
+                                      FullWidth="true"
+                                      For="@(() => _email)"
+                                      Immediate="true"
+                                      Required="true"
+                                      RequiredError="Email is required"
+                                      Validation="@(InputValidator.ValidateEmail)"
+                                      Adornment="Adornment.Start"
+                                      AdornmentIcon="@Icons.Material.Filled.Email"
+                                      AdornmentColor="Color.Primary"
+                                      Class="modern-input" />
+                    </div>
 
-                <MudTextField @bind-Value="_password"
-                              Label="Password"
-                              Variant="Variant.Outlined"
-                              InputType="InputType.Password"
-                              FullWidth="true"
-                              For="@(() => _password)"
-                              Immediate="true"
-                              Required="true"
-                              RequiredError="Password is required"
-                              Validation="@(new Func<string, string>(ValidatePassword))" />
+                    <!-- Password Field -->
+                    <div class="mb-3">
+                        <MudTextField @bind-Value="_password"
+                                      Label="Password"
+                                      Variant="Variant.Outlined"
+                                      InputType="@_passwordInputType"
+                                      FullWidth="true"
+                                      For="@(() => _password)"
+                                      Immediate="true"
+                                      Required="true"
+                                      RequiredError="Password is required"
+                                      Validation="@(InputValidator.ValidatePassword)"
+                                      Adornment="Adornment.End"
+                                      AdornmentIcon="@_passwordIcon"
+                                      OnAdornmentClick="TogglePasswordVisibility"
+                                      AdornmentAriaLabel="Toggle password visibility"
+                                      Class="modern-input" />
+                    </div>
 
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <MudText Color="Color.Error" Class="mt-2">@_errorMessage</MudText>
-                }
+                    <!-- Error Message -->
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <MudAlert Severity="Severity.Error" Class="mb-3" Dense="true" Variant="Variant.Filled">
+                            @_errorMessage
+                        </MudAlert>
+                    }
 
-            </MudForm>
-        </MudCardContent>
+                </MudForm>
+            </MudCardContent>
 
-        <MudCardActions Class="justify-between">
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="HandleLogin"
-                       Class="px-6 py-2 mud-elevation-hover"
-                       Style="font-weight:bold; font-size:1rem;">
-                Login
-            </MudButton>
+            <MudCardActions Class="pa-6 pt-0">
+                <MudStack Spacing="3" Style="width: 100%;">
 
-            <MudButton Variant="Variant.Text"
-                       Color="Color.Secondary"
-                       OnClick="NavigateToForgotPassword"
-                       Class="px-4 py-2"
-                       Style="font-weight:bold; text-decoration:underline;">
-                Forgot Password?
-            </MudButton>
-        </MudCardActions>
+                    <!-- Login Button -->
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               Size="Size.Large"
+                               FullWidth="true"
+                               OnClick="HandleLogin"
+                               StartIcon="@Icons.Material.Filled.Login"
+                               Class="login-button"
+                               Disabled="@_isLoggingIn">
+                        @if (_isLoggingIn)
+                        {
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                            <span>Signing In...</span>
+                        }
+                        else
+                        {
+                            <span>Sign In</span>
+                        }
+                    </MudButton>
 
-    </MudCard>
-</MudContainer>
+                    <!-- Forgot Password Link -->
+                    <div class="text-center">
+                        <MudLink Href="/ForgotPassword"
+                                 Typo="Typo.body2"
+                                 Color="Color.Primary"
+                                 Class="forgot-link">
+                            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Class="mr-1" />
+                            Forgot your password?
+                        </MudLink>
+                    </div>
+
+                </MudStack>
+            </MudCardActions>
+        </MudCard>
+
+        <!-- Footer -->
+        <div class="login-footer mt-4 text-center fade-in">
+            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                © 2024 Ala Mashi Dashboard. All rights reserved.
+            </MudText>
+        </div>
+
+    </MudContainer>
+</div>
+
+<style>
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem 1rem;
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 480px;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .logo-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
+    }
+
+    .login-title {
+        color: white;
+        font-weight: 700;
+        margin-top: 1.5rem;
+    }
+
+    .login-subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+    }
+
+    .login-card {
+        border-radius: 20px;
+        background: white;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+    }
+
+    .modern-input {
+        border-radius: 12px;
+    }
+
+    ::deep .modern-input .mud-input-outlined {
+        border-radius: 12px;
+    }
+
+    .login-button {
+        height: 56px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 1rem;
+        text-transform: none;
+        box-shadow: 0 4px 14px rgba(102, 126, 234, 0.4);
+        transition: all 0.3s ease;
+    }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+    .forgot-link {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+        .forgot-link:hover {
+            text-decoration: underline;
+            transform: translateX(2px);
+        }
+
+    .login-footer {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .fade-in {
+        animation: fadeIn 0.6s ease-in;
+    }
+
+    .slide-up {
+        animation: slideUp 0.6s ease-out;
+    }
+
+    .pulse-icon {
+        animation: pulse 3s infinite;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .login-wrapper {
+            padding: 1rem;
+        }
+
+        .login-card {
+            border-radius: 16px;
+        }
+
+        .logo-circle {
+            width: 70px;
+            height: 70px;
+        }
+
+        .login-title {
+            font-size: 1.75rem;
+        }
+    }
+</style>
 
 @code {
     private string _email = "";
     private string _password = "";
     private string _errorMessage = "";
+    private bool _isLoggingIn = false;
     private MudForm? _form;
 
-    private string? ValidateEmail(string email)
+    private bool _passwordVisible = false;
+    private InputType _passwordInputType = InputType.Password;
+    private string _passwordIcon = Icons.Material.Filled.VisibilityOff;
+
+    private void TogglePasswordVisibility()
     {
-        if (string.IsNullOrWhiteSpace(email)) return "Email is required";
-        var regex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
-        return regex.IsMatch(email) ? null : "Invalid email format";
+        _passwordVisible = !_passwordVisible;
+        _passwordInputType = _passwordVisible ? InputType.Text : InputType.Password;
+        _passwordIcon = _passwordVisible ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
     }
-
-    private string? ValidatePassword(string password)
-    {
-        if (string.IsNullOrWhiteSpace(password)) 
-            return "Password is required";
-
-        if (password.Length < 8) 
-            return "Password must be at least 8 characters";
-
-        // تحقق من وجود رقم
-        if (!password.Any(char.IsDigit)) 
-            return "Password must contain at least one number";
-
-        // تحقق من وجود حرف خاص
-        var specialChars = "!@#$%^&*(),.?\":{}|<>";
-        if (!password.Any(c => specialChars.Contains(c))) 
-            return "Password must contain at least one special character";
-
-        return null; // كل حاجة تمام
-    }
-
 
     private async Task HandleLogin()
     {
@@ -106,9 +300,14 @@
         if (_form == null) return;
 
         await _form.Validate();
-        if (!_form.IsValid) return; // لو فيه خطأ في الفاليديشن ما نكملش
+        if (!_form.IsValid) return;
+
+        _isLoggingIn = true;
+        StateHasChanged();
 
         bool success = await ApiService.LoginAsync(_email, _password);
+
+        _isLoggingIn = false;
 
         if (success)
         {
@@ -116,11 +315,8 @@
         }
         else
         {
-            _errorMessage = "Invalid email or password.";
+            _errorMessage = "Invalid email or password. Please try again.";
+            StateHasChanged();
         }
-    }
-    private void NavigateToForgotPassword()
-    {
-        NavManager.NavigateTo("/ForgotPassword");
     }
 }

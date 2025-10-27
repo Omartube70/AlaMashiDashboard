@@ -2,52 +2,285 @@
 
 <PageTitle>User Management</PageTitle>
 
-<div class="page-header centered">
-    <h1 class="page-title">👥 User Management</h1>
-    <p class="page-subtitle">Manage and view all registered users in the system.</p>
+<!-- Page Header -->
+<div class="page-header mb-4 slide-in">
+    <div class="d-flex justify-space-between align-center flex-wrap">
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">👥 User Management</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Manage and view all registered users in the system</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.PersonAdd"
+                   OnClick="OpenAddDialog"
+                   Class="mt-2 mt-md-0 pulse-button">
+            Add User
+        </MudButton>
+    </div>
 </div>
-
 
 @if (isLoading)
 {
-    <MudProgressCircular Indeterminate="true" />
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent>
+            <div class="d-flex flex-column justify-center align-center pa-8">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading users...</MudText>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 else if (usersList != null && usersList.Any())
 {
-    <MudTable Items="@usersList" Hover="true" Striped="true" Elevation="2" Dense="true" Bordered="true">
-        <HeaderContent>
-            <MudTh>ID</MudTh>
-            <MudTh>Username</MudTh>
-            <MudTh>Email</MudTh>
-            <MudTh>Phone</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="ID">@context.UserId</MudTd>
-            <MudTd DataLabel="Username">@context.UserName</MudTd>
-            <MudTd DataLabel="Email">@context.Email</MudTd>
-            <MudTd DataLabel="Phone">@context.Phone</MudTd>
-        </RowTemplate>
-        <PagerContent>
-            <MudTablePager />
-        </PagerContent>
-    </MudTable>
+    <MudCard Elevation="2" Class="data-table-card fade-in">
+        <MudCardContent Class="pa-0">
+            <MudTable Items="@GetFilteredUsers()"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      FixedHeader="true"
+                      Height="calc(100vh - 320px)"
+                      Class="custom-table">
+
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString"
+                                  Placeholder="Search users..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mr-2"
+                                  Style="max-width: 400px;" />
+                    <MudSpacer />
+                    <MudTooltip Text="Refresh">
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                       OnClick="LoadDataAsync"
+                                       Color="Color.Primary" />
+                    </MudTooltip>
+                    <MudTooltip Text="Export">
+                        <MudIconButton Icon="@Icons.Material.Filled.FileDownload"
+                                       Color="Color.Secondary" />
+                    </MudTooltip>
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<UserDto, object>(x => x.UserId)">
+                            ID
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<UserDto, object>(x => x.UserName)">
+                            Username
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Email</MudTh>
+                    <MudTh>Phone</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="ID">
+                        <MudChip Size="Size.Small" Color="Color.Default">@context.UserId</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Username">
+                        <div class="d-flex align-center">
+                            <MudAvatar Size="Size.Small" Color="Color.Primary" Class="mr-2">
+                                @context.UserName.Substring(0, 1).ToUpper()
+                            </MudAvatar>
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.UserName</MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Email">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Info" Class="mr-1" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.Email</MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Phone">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Success" Class="mr-1" />
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@context.Phone</MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Actions" Style="text-align: right;">
+                        <MudTooltip Text="View Details">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           OnClick="@(() => ViewUser(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Edit">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Info"
+                                           OnClick="@(() => OpenEditDialog(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Delete">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => DeleteUser(context))" />
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Stats Footer -->
+    <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
+        <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small" Class="mr-1" />
+                Total Users: <strong>@usersList.Count</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" Class="mr-1" />
+                Showing: <strong>@GetFilteredUsers().Count()</strong>
+            </MudText>
+        </div>
+    </MudPaper>
 }
 else
 {
-    <MudText Color="Color.Error">فشل تحميل بيانات المستخدمين أو لا يوجد مستخدمين.</MudText>
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center text-center">
+                <MudIcon Icon="@Icons.Material.Filled.PersonOff"
+                         Size="Size.Large"
+                         Color="Color.Secondary"
+                         Class="mb-4 pulse-icon"
+                         Style="font-size: 5rem;" />
+                <MudText Typo="Typo.h6" Class="mb-2">No Users Found</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Start by adding your first user to the system.
+                </MudText>
+                <div class="d-flex gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="OpenAddDialog"
+                               StartIcon="@Icons.Material.Filled.PersonAdd">
+                        Add User
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               OnClick="LoadDataAsync"
+                               StartIcon="@Icons.Material.Filled.Refresh">
+                        Retry
+                    </MudButton>
+                </div>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 
+<style>
+    .page-header {
+        animation: slideInDown 0.5s ease-out;
+    }
 
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .slide-in {
+        animation: slideInLeft 0.5s ease-out;
+    }
+
+    .slide-up {
+        animation: slideUp 0.5s ease-out;
+    }
+
+    .pulse-button {
+        animation: pulse 2s infinite;
+    }
+
+    .pulse-icon {
+        animation: pulse 3s infinite;
+    }
+
+    .data-table-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    ::deep .mud-table-row:hover {
+        background-color: rgba(59, 130, 246, 0.05) !important;
+        transform: scale(1.01);
+    }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+</style>
 
 @code {
     private bool isLoading = true;
     private List<UserDto>? usersList;
+    private string _searchString = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
-            return;
-
+        if (!firstRender) return;
         await LoadDataAsync();
     }
 
@@ -64,18 +297,29 @@ else
         StateHasChanged();
     }
 
+    private IEnumerable<UserDto> GetFilteredUsers()
+    {
+        if (usersList == null) return Enumerable.Empty<UserDto>();
+        if (string.IsNullOrWhiteSpace(_searchString)) return usersList;
+
+        return usersList.Where(u =>
+            u.UserName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            u.Email.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            u.Phone.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            u.UserId.ToString().Contains(_searchString)
+        );
+    }
+
+    private void OpenAddDialog() { }
+    private void OpenEditDialog(UserDto user) { }
+    private void ViewUser(UserDto user) { }
+    private async Task DeleteUser(UserDto user) { }
+
     public class UserDto
     {
-        [JsonPropertyName("userId")]
-        public int UserId { get; set; }
-
-        [JsonPropertyName("userName")]
-        public string UserName { get; set; }
-
-        [JsonPropertyName("email")]
-        public string Email { get; set; }
-
-        [JsonPropertyName("phone")]
-        public string Phone { get; set; }
+        [JsonPropertyName("userId")] public int UserId { get; set; }
+        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
+        [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("phone")] public string Phone { get; set; } = string.Empty;
     }
 }

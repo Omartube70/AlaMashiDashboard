@@ -2,59 +2,311 @@
 
 <PageTitle>Address Management</PageTitle>
 
-<div class="page-header centered">
-    <h1 class="page-title">📍 Addresses</h1>
-    <p class="page-subtitle">View and manage user delivery addresses.</p>
+<!-- Page Header -->
+<div class="page-header mb-4 slide-in">
+    <div class="d-flex justify-space-between align-center flex-wrap">
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">📍 Address Management</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">View and manage user delivery addresses</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.AddLocation"
+                   OnClick="OpenAddDialog"
+                   Class="mt-2 mt-md-0 pulse-button">
+            Add Address
+        </MudButton>
+    </div>
 </div>
-
 
 @if (isLoading)
 {
-    <div class="d-flex justify-center mt-4">
-        <MudProgressCircular Indeterminate="true" />
-    </div>
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent>
+            <div class="d-flex flex-column justify-center align-center pa-8">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading addresses...</MudText>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 else if (addressesList != null && addressesList.Any())
 {
-    <MudPaper Elevation="2" Class="mt-4">
-        <MudTable Items="@addressesList" Hover="true" Striped="true" Dense="true" Bordered="true">
-            <HeaderContent>
-                <MudTh>ID</MudTh>
-                <MudTh>Street</MudTh>
-                <MudTh>City</MudTh>
-                <MudTh>Details</MudTh>
-                <MudTh>Type</MudTh>
-                <MudTh>User ID</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="ID">@context.AddressId</MudTd>
-                <MudTd DataLabel="Street">@context.Street</MudTd>
-                <MudTd DataLabel="City">@context.City</MudTd>
-                <MudTd DataLabel="Details">@context.AddressDetails</MudTd>
-                <MudTd DataLabel="Type">@context.AddressType</MudTd>
-                <MudTd DataLabel="User ID">@context.UserId</MudTd>
-            </RowTemplate>
-            <PagerContent>
-                <MudTablePager />
-            </PagerContent>
-        </MudTable>
+    <MudCard Elevation="2" Class="data-table-card fade-in">
+        <MudCardContent Class="pa-0">
+            <MudTable Items="@GetFilteredAddresses()"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      FixedHeader="true"
+                      Height="calc(100vh - 320px)"
+                      Class="custom-table">
+
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString"
+                                  Placeholder="Search addresses..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mr-2"
+                                  Style="max-width: 400px;" />
+                    <MudSpacer />
+                    <MudTooltip Text="Refresh">
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                       OnClick="LoadDataAsync"
+                                       Color="Color.Primary" />
+                    </MudTooltip>
+                    <MudTooltip Text="Filter">
+                        <MudIconButton Icon="@Icons.Material.Filled.FilterList"
+                                       Color="Color.Secondary" />
+                    </MudTooltip>
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<AddressDto, object>(x => x.AddressId)">
+                            ID
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Location</MudTh>
+                    <MudTh>Details</MudTh>
+                    <MudTh>Type</MudTh>
+                    <MudTh>User ID</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="ID">
+                        <MudChip Size="Size.Small" Color="Color.Default">@context.AddressId</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Location">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.LocationOn"
+                                     Color="Color.Error"
+                                     Size="Size.Small"
+                                     Class="mr-2" />
+                            <div>
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.Street</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.City</MudText>
+                            </div>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Details">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            @(context.AddressDetails.Length > 40 ? context.AddressDetails.Substring(0, 40) + "..." : context.AddressDetails)
+                        </MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Type">
+                        @if (context.AddressType.ToLower() == "home")
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Success"
+                                     Icon="@Icons.Material.Filled.Home">
+                                Home
+                            </MudChip>
+                        }
+                        else if (context.AddressType.ToLower() == "work")
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Info"
+                                     Icon="@Icons.Material.Filled.Business">
+                                Work
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Default"
+                                     Icon="@Icons.Material.Filled.Place">
+                                @context.AddressType
+                            </MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="User ID">
+                        <MudChip Size="Size.Small" Color="Color.Primary" Icon="@Icons.Material.Filled.Person">
+                            @context.UserId
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions" Style="text-align: right;">
+                        <MudTooltip Text="View on Map">
+                            <MudIconButton Icon="@Icons.Material.Filled.Map"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           OnClick="@(() => ViewOnMap(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Edit">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Info"
+                                           OnClick="@(() => OpenEditDialog(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Delete">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => DeleteAddress(context))" />
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Stats Footer -->
+    <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
+        <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Total: <strong>@addressesList.Count</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Success">
+                Home: <strong>@addressesList.Count(a => a.AddressType.ToLower() == "home")</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Info">
+                Work: <strong>@addressesList.Count(a => a.AddressType.ToLower() == "work")</strong>
+            </MudText>
+        </div>
     </MudPaper>
 }
 else
 {
-    <MudAlert Severity="Severity.Warning" Class="mt-4">Failed to load address data or no addresses found.</MudAlert>
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center text-center">
+                <MudIcon Icon="@Icons.Material.Filled.LocationOff"
+                         Size="Size.Large"
+                         Color="Color.Secondary"
+                         Class="mb-4 pulse-icon"
+                         Style="font-size: 5rem;" />
+                <MudText Typo="Typo.h6" Class="mb-2">No Addresses Found</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Start by adding delivery addresses for users.
+                </MudText>
+                <div class="d-flex gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="OpenAddDialog"
+                               StartIcon="@Icons.Material.Filled.AddLocation">
+                        Add Address
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               OnClick="LoadDataAsync"
+                               StartIcon="@Icons.Material.Filled.Refresh">
+                        Retry
+                    </MudButton>
+                </div>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 
+<style>
+    .page-header {
+        animation: slideInDown 0.5s ease-out;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .slide-in {
+        animation: slideInLeft 0.5s ease-out;
+    }
+
+    .slide-up {
+        animation: slideUp 0.5s ease-out;
+    }
+
+    .pulse-button {
+        animation: pulse 2s infinite;
+    }
+
+    .pulse-icon {
+        animation: pulse 3s infinite;
+    }
+
+    .data-table-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    ::deep .mud-table-row:hover {
+        background-color: rgba(239, 68, 68, 0.05) !important;
+        transform: scale(1.01);
+    }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+</style>
 
 @code {
     private bool isLoading = true;
     private List<AddressDto>? addressesList;
+    private string _searchString = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
-              return;
-
+        if (!firstRender) return;
         await LoadDataAsync();
     }
 
@@ -69,10 +321,26 @@ else
 
         isLoading = false;
         StateHasChanged();
-
     }
 
+    private IEnumerable<AddressDto> GetFilteredAddresses()
+    {
+        if (addressesList == null) return Enumerable.Empty<AddressDto>();
+        if (string.IsNullOrWhiteSpace(_searchString)) return addressesList;
 
+        return addressesList.Where(a =>
+            a.Street.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            a.City.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            a.AddressDetails.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            a.AddressType.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            a.AddressId.ToString().Contains(_searchString)
+        );
+    }
+
+    private void OpenAddDialog() { }
+    private void OpenEditDialog(AddressDto address) { }
+    private void ViewOnMap(AddressDto address) { }
+    private async Task DeleteAddress(AddressDto address) { }
 
     public class AddressDto
     {
@@ -80,7 +348,7 @@ else
         [JsonPropertyName("street")] public string Street { get; set; } = string.Empty;
         [JsonPropertyName("city")] public string City { get; set; } = string.Empty;
         [JsonPropertyName("addressDetails")] public string AddressDetails { get; set; } = string.Empty;
-        [JsonPropertyName("addressType")] public string AddressType { get; set; } = string.Empty; // API returns string "home"/"Work"
+        [JsonPropertyName("addressType")] public string AddressType { get; set; } = string.Empty;
         [JsonPropertyName("userId")] public int UserId { get; set; }
     }
 }

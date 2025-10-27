@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 public class TokenManagerService
 {
     private readonly ProtectedLocalStorage _storage;
+    private bool _isInitialized = false;
 
     public event Action? OnUserNameChanged;
 
@@ -13,14 +14,25 @@ public class TokenManagerService
         _storage = storage;
     }
 
+    private async Task EnsureInitializedAsync()
+    {
+        if (!_isInitialized)
+        {
+            await Task.Delay(100); // Small delay to ensure browser storage is ready
+            _isInitialized = true;
+        }
+    }
+
     public async Task SetTokensAsync(string accessToken, string refreshToken)
     {
+        await EnsureInitializedAsync();
         await _storage.SetAsync("accessToken", accessToken);
         await _storage.SetAsync("refreshToken", refreshToken);
     }
 
     public async Task SetUserNameAsync(string userName)
     {
+        await EnsureInitializedAsync();
         await _storage.SetAsync("userName", userName);
         OnUserNameChanged?.Invoke();
     }
@@ -29,41 +41,60 @@ public class TokenManagerService
     {
         try
         {
+            await EnsureInitializedAsync();
             var result = await _storage.GetAsync<string>("userName");
             return result.Success ? result.Value : null;
         }
-        catch { };
-
-        return  null;
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting username: {ex.Message}");
+            return null;
+        }
     }
 
     public async Task<string?> GetAccessTokenAsync()
     {
         try
         {
+            await EnsureInitializedAsync();
             var result = await _storage.GetAsync<string>("accessToken");
             return result.Success ? result.Value : null;
         }
-        catch { };
-        return null;
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting access token: {ex.Message}");
+            return null;
+        }
     }
 
     public async Task<string?> GetRefreshTokenAsync()
     {
         try
         {
+            await EnsureInitializedAsync();
             var result = await _storage.GetAsync<string>("refreshToken");
             return result.Success ? result.Value : null;
         }
-        catch { }
-        return null;
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting refresh token: {ex.Message}");
+            return null;
+        }
     }
 
     public async Task ClearTokensAsync()
     {
-        await _storage.DeleteAsync("accessToken");
-        await _storage.DeleteAsync("refreshToken");
-        await _storage.DeleteAsync("userName");
-        OnUserNameChanged?.Invoke(); // 🔹 برضو بلّغ عند تسجيل الخروج
+        try
+        {
+            await EnsureInitializedAsync();
+            await _storage.DeleteAsync("accessToken");
+            await _storage.DeleteAsync("refreshToken");
+            await _storage.DeleteAsync("userName");
+            OnUserNameChanged?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error clearing tokens: {ex.Message}");
+        }
     }
 }

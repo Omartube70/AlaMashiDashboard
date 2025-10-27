@@ -1,123 +1,240 @@
-﻿<link href="css/tables.css" rel="stylesheet" />
+﻿@inherits LayoutComponentBase
+@inject TokenManagerService TokenManager
+@inject NavigationManager NavManager
+@inject IJSRuntime JS
 
-<MudThemeProvider Theme="_theme" />
-<MudPopoverProvider />
+<MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 <MudLayout>
+    <!-- ✅ Responsive AppBar -->
+    <MudAppBar Elevation="1" Dense="@_isMobile" Color="Color.Primary" Class="px-2 px-md-4">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="ToggleDrawer" />
 
-    <MudAppBar Elevation="0" Color="Color.Primary" Dense="true" Class="px-4 d-flex align-items-center">
-        <!-- 🔹 زر القائمة -->
-        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" OnClick="@ToggleDrawer" />
-
-        <!-- 🔹 اسم المشروع -->
-        <div class="d-flex align-items-center ml-2">
-            <MudText Typo="Typo.h6" Class="text-white font-bold">
-                AlaMashi Dashboard
-            </MudText>
-        </div>
+        <MudText Typo="@(_isMobile? Typo.body1: Typo.h6)" Class="ml-2 font-weight-bold text-white">
+            @(_isMobile ? "AlaMashi" : "AlaMashi Dashboard")
+        </MudText>
 
         <MudSpacer />
 
-        <!-- 🔹 User Info Section -->
-        <div class="d-flex align-items-center user-info">
+        <!-- 🌗 Dark/Light Mode Switch -->
+        <MudIconButton Icon="@(_isDarkMode? Icons.Material.Filled.DarkMode : Icons.Material.Filled.WbSunny)"
+                       OnClick="ToggleTheme"
+                       Color="Color.Inherit"
+                       Size="Size.Medium"
+                       Title="Toggle Dark/Light Mode" />
 
-            <!-- 🔸 اسم المستخدم -->
-            <MudText Typo="Typo.body1" Class="text-white fw-bold username">@_userName</MudText>
+        <!-- 👤 User Info - Desktop Only -->
+        @if (!_isMobile)
+        {
+            <div class="d-flex align-center user-info ml-3">
+                <MudText Typo="Typo.body1" Class="text-white font-weight-bold mr-2">@_userName</MudText>
+                <MudAvatar Color="Color.Transparent" Size="Size.Medium">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size:28px;" />
+                </MudAvatar>
+            </div>
+        }
 
-            <!-- 🔸 أيقونة المستخدم الجديدة -->
-            <MudAvatar Color="Color.Transparent" Size="Size.Medium" Class="user-avatar ml-2">
-                <MudIcon Icon="@Icons.Material.Filled.Man" Style="font-size:32px;" />
-            </MudAvatar>
-
-            <!-- 🔸 قائمة الخيارات -->
-            <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown"
-                     Color="Color.Inherit"
-                     Dense="true"
-                     AnchorOrigin="Origin.BottomRight"
-                     TransformOrigin="Origin.TopRight"
-                     Class="ml-1">
-                <MudMenuItem Disabled="true">
-                    <MudText Typo="Typo.body2">Welcome, @_userName 👋</MudText>
-                </MudMenuItem>
-                <MudDivider />
-                <MudMenuItem>
-                    <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" />
-                    Profile Settings
-                </MudMenuItem>
-                <MudMenuItem OnClick="LogoutUser">
-                    <MudIcon Icon="@Icons.Material.Filled.Logout" Class="mr-2" />
-                    Logout
-                </MudMenuItem>
-            </MudMenu>
-        </div>
-
+        <!-- 👤 User Menu -->
+        <MudMenu Icon="@Icons.Material.Filled.MoreVert"
+                 Color="Color.Inherit"
+                 Dense="true"
+                 AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight">
+            <MudMenuItem Disabled="true">
+                <div class="d-flex align-center">
+                    <MudAvatar Size="Size.Small" Class="mr-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" />
+                    </MudAvatar>
+                    <MudText Typo="Typo.body2">@_userName</MudText>
+                </div>
+            </MudMenuItem>
+            <MudDivider />
+            <MudMenuItem Icon="@Icons.Material.Filled.Settings">
+                Profile Settings
+            </MudMenuItem>
+            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="LogoutUser">
+                Logout
+            </MudMenuItem>
+        </MudMenu>
     </MudAppBar>
 
-    <!-- 🔹 Sidebar Navigation -->
+    <!-- 📱 Responsive Sidebar Navigation -->
     <MudDrawer @bind-Open="_drawerOpen"
                Elevation="2"
-               Variant="DrawerVariant.Mini"
+               Variant="@_drawerVariant"
+               Breakpoint="Breakpoint.Md"
+               ClipMode="DrawerClipMode.Always"
                Class="custom-drawer">
 
-        <MudDrawerHeader Class="justify-center">
+        <MudDrawerHeader Class="d-flex justify-center align-center pa-4">
             <img src="https://raw.githubusercontent.com/Omartube70/AlaMashi.API/master/AlaMashi.API/.assets/logo.png"
                  alt="AlaMashi Logo"
-                 width="50"
-                 style="border-radius:8px;" />
+                 width="@(_drawerOpen ? "70" : "45")"
+                 class="logo-img"
+                 style="border-radius:10px; transition: all 0.3s ease;" />
         </MudDrawerHeader>
 
         <MudNavMenu>
-            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
-            <MudNavLink Href="/users" Icon="@Icons.Material.Filled.People">Users</MudNavLink>
-            <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category">Categories</MudNavLink>
-            <MudNavLink Href="/products" Icon="@Icons.Material.Filled.Inventory">Products</MudNavLink>
-            <MudNavLink Href="/offers" Icon="@Icons.Material.Filled.LocalOffer">Offers</MudNavLink>
-            <MudNavLink Href="/addresses" Icon="@Icons.Material.Filled.LocationOn">Addresses</MudNavLink>
+            <MudNavLink Href="/"
+                        Icon="@Icons.Material.Filled.Dashboard"
+                        Match="NavLinkMatch.All">
+                Dashboard
+            </MudNavLink>
+            <MudNavLink Href="/users"
+                        Icon="@Icons.Material.Filled.People">
+                Users
+            </MudNavLink>
+            <MudNavLink Href="/categories"
+                        Icon="@Icons.Material.Filled.Category">
+                Categories
+            </MudNavLink>
+            <MudNavLink Href="/products"
+                        Icon="@Icons.Material.Filled.Inventory">
+                Products
+            </MudNavLink>
+            <MudNavLink Href="/offers"
+                        Icon="@Icons.Material.Filled.LocalOffer">
+                Offers
+            </MudNavLink>
+            <MudNavLink Href="/addresses"
+                        Icon="@Icons.Material.Filled.LocationOn">
+                Addresses
+            </MudNavLink>
         </MudNavMenu>
+
+        <!-- Footer في الـ Drawer -->
+        @if (_drawerOpen && !_isMobile)
+        {
+            <MudSpacer />
+            <div class="pa-4 mt-auto">
+                <MudText Typo="Typo.caption" Align="Align.Center" Class="mud-text-secondary">
+                    Version 1.0.0
+                </MudText>
+            </div>
+        }
     </MudDrawer>
 
-    <!-- 🔹 Main Content -->
-    <MudMainContent Class="p-6" Style="background-color:#f9fafb; min-height:100vh;">
-        @Body
+    <!-- 📄 Main Content -->
+    <MudMainContent Class="main-content">
+        <div class="content-wrapper pa-3 pa-md-6">
+            @Body
+        </div>
     </MudMainContent>
-
 </MudLayout>
 
 @code {
     private bool _drawerOpen = true;
+    private bool _isDarkMode = false;
+    private bool _isMobile = false;
     private string _userName = "User";
+    private DrawerVariant _drawerVariant = DrawerVariant.Mini;
 
     private MudTheme _theme = new MudTheme()
     {
-        PaletteLight = new PaletteLight()
+        Palette = new Palette()
         {
-            Primary = "#3b82f6",
-            Secondary = "#10b981",
-            Background = "#f9fafb",
-            AppbarBackground = "#3b82f6",
+            Primary = "#16a34a",
+            Secondary = "#22c55e",
+            Background = "#f8fafc",
+            Surface = "#ffffff",
+            AppbarBackground = "#16a34a",
+            DrawerBackground = "#ffffff",
+            DrawerText = "#1e293b",
+            TextPrimary = "#0f172a",
+            TextSecondary = "#64748b",
+            Divider = "#e2e8f0"
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#22c55e",
+            Secondary = "#86efac",
+            Background = "#0f172a",
+            Surface = "#1e293b",
+            AppbarBackground = "#14532d",
             DrawerBackground = "#1e293b",
-            DrawerText = "#ffffff",
-            TextPrimary = "#111827"
+            DrawerText = "#e2e8f0",
+            TextPrimary = "#f1f5f9",
+            TextSecondary = "#94a3b8",
+            Divider = "#334155"
         }
     };
 
-    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
-
     protected override async Task OnInitializedAsync()
     {
+        // Subscribe to username changes
         TokenManager.OnUserNameChanged += async () =>
-       {
-          _userName = await TokenManager.GetUserNameAsync() ?? "User";
-          await InvokeAsync(StateHasChanged);
-       };
+        {
+            _userName = await TokenManager.GetUserNameAsync() ?? "User";
+            await InvokeAsync(StateHasChanged);
+        };
 
-       var name = await TokenManager.GetUserNameAsync();
+        var name = await TokenManager.GetUserNameAsync();
         if (!string.IsNullOrWhiteSpace(name))
-           _userName = name;
+            _userName = name;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await CheckScreenSize();
+        }
+    }
+
+    private async Task CheckScreenSize()
+    {
+        try
+        {
+            var width = await JS.InvokeAsync<int>("eval", "window.innerWidth");
+            UpdateLayoutForScreenWidth(width);
+        }
+        catch
+        {
+            // Default to desktop if JS fails
+            _isMobile = false;
+            _drawerVariant = DrawerVariant.Mini;
+            _drawerOpen = true;
+            StateHasChanged();
+        }
+    }
+
+    private void UpdateLayoutForScreenWidth(int width)
+    {
+        _isMobile = width < 960;
+
+        if (width < 960) // Mobile & Tablet
+        {
+            _drawerVariant = DrawerVariant.Temporary;
+            _drawerOpen = false;
+        }
+        else if (width < 1280) // Small Desktop
+        {
+            _drawerVariant = DrawerVariant.Mini;
+            _drawerOpen = true;
+        }
+        else // Large Desktop
+        {
+            _drawerVariant = DrawerVariant.Persistent;
+            _drawerOpen = true;
+        }
+
+        StateHasChanged();
+    }
+
+    private void ToggleDrawer()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    private void ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+    }
 
     private async Task LogoutUser()
     {

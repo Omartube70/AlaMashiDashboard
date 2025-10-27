@@ -2,57 +2,352 @@
 
 <PageTitle>Product Management</PageTitle>
 
-<div class="page-header centered">
-    <h1 class="page-title">🛍️ Products</h1>
-    <p class="page-subtitle">Add, edit, and manage all available products in the system.</p>
+<!-- Page Header -->
+<div class="page-header mb-4 slide-in">
+    <div class="d-flex justify-space-between align-center flex-wrap">
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">🛍️ Product Management</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Add, edit, and manage all available products in the system</MudText>
+        </div>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="OpenAddDialog"
+                   Class="mt-2 mt-md-0 pulse-button">
+            Add Product
+        </MudButton>
+    </div>
 </div>
 
 @if (isLoading)
 {
-    <div class="d-flex justify-center mt-4">
-        <MudProgressCircular Indeterminate="true" />
-    </div>
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent>
+            <div class="d-flex flex-column justify-center align-center pa-8">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading products...</MudText>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 else if (productsList != null && productsList.Any())
 {
-    <MudPaper Elevation="2" Class="mt-4">
-        <MudTable Items="@productsList" Hover="true" Striped="true" Dense="true" Bordered="true">
-            <HeaderContent>
-                <MudTh>ID</MudTh>
-                <MudTh>Product Name</MudTh>
-                <MudTh>Price</MudTh>
-                <MudTh>Stock</MudTh>
-                <MudTh>Category</MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="ID">@context.ProductID</MudTd>
-                <MudTd DataLabel="Product Name">@context.ProductName</MudTd>
-                <MudTd DataLabel="Price">@context.Price.ToString("C")</MudTd>
-                <MudTd DataLabel="Stock">@context.QuantityInStock</MudTd>
-                <MudTd DataLabel="Category">@context.CategoryName</MudTd>
-            </RowTemplate>
-            <PagerContent>
-                <MudTablePager />
-            </PagerContent>
-        </MudTable>
+    <MudCard Elevation="2" Class="data-table-card fade-in">
+        <MudCardContent Class="pa-0">
+            <MudTable Items="@GetFilteredProducts()"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      FixedHeader="true"
+                      Height="calc(100vh - 320px)"
+                      Class="custom-table">
+
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString"
+                                  Placeholder="Search products..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mr-2"
+                                  Style="max-width: 400px;" />
+                    <MudSpacer />
+                    <MudTooltip Text="Refresh">
+                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                                       OnClick="LoadDataAsync"
+                                       Color="Color.Primary" />
+                    </MudTooltip>
+                    <MudTooltip Text="Filter">
+                        <MudIconButton Icon="@Icons.Material.Filled.FilterList"
+                                       Color="Color.Secondary" />
+                    </MudTooltip>
+                    <MudTooltip Text="Export">
+                        <MudIconButton Icon="@Icons.Material.Filled.FileDownload"
+                                       Color="Color.Info" />
+                    </MudTooltip>
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<ProductDto, object>(x => x.ProductID)">
+                            ID
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Product</MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<ProductDto, object>(x => x.Price)">
+                            Price
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>
+                        <MudTableSortLabel SortBy="new Func<ProductDto, object>(x => x.QuantityInStock)">
+                            Stock
+                        </MudTableSortLabel>
+                    </MudTh>
+                    <MudTh>Category</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="ID">
+                        <MudChip Size="Size.Small" Color="Color.Default">@context.ProductID</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Product">
+                        <div class="d-flex align-center">
+                            @if (!string.IsNullOrEmpty(context.MainImageURL))
+                            {
+                                <MudAvatar Image="@context.MainImageURL"
+                                           Size="Size.Medium"
+                                           Class="mr-3"
+                                           Style="border-radius: 8px;" />
+                            }
+                            else
+                            {
+                                <MudAvatar Color="Color.Secondary"
+                                           Size="Size.Medium"
+                                           Class="mr-3"
+                                           Style="border-radius: 8px;">
+                                    <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" />
+                                </MudAvatar>
+                            }
+                            <div>
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.ProductName</MudText>
+                                @if (!string.IsNullOrEmpty(context.ProductDescription))
+                                {
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @(context.ProductDescription.Length > 30 ? context.ProductDescription.Substring(0, 30) + "..." : context.ProductDescription)
+                                    </MudText>
+                                }
+                            </div>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Price">
+                        <MudChip Size="Size.Small"
+                                 Color="Color.Success"
+                                 Icon="@Icons.Material.Filled.AttachMoney"
+                                 Style="font-weight: bold;">
+                            @context.Price.ToString("N2")
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Stock">
+                        @if (context.QuantityInStock > 50)
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Success"
+                                     Icon="@Icons.Material.Filled.Inventory">
+                                @context.QuantityInStock
+                            </MudChip>
+                        }
+                        else if (context.QuantityInStock > 10)
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Warning"
+                                     Icon="@Icons.Material.Filled.Inventory2">
+                                @context.QuantityInStock
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Error"
+                                     Icon="@Icons.Material.Filled.WarningAmber">
+                                @context.QuantityInStock
+                            </MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Category">
+                        <MudChip Size="Size.Small"
+                                 Color="Color.Info"
+                                 Icon="@Icons.Material.Filled.Category">
+                            @context.CategoryName
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions" Style="text-align: right;">
+                        <MudTooltip Text="View Details">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           OnClick="@(() => ViewProduct(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Edit">
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           Color="Color.Info"
+                                           OnClick="@(() => OpenEditDialog(context))" />
+                        </MudTooltip>
+                        <MudTooltip Text="Delete">
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => DeleteProduct(context))" />
+                        </MudTooltip>
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Stats Footer -->
+    <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
+        <div class="d-flex justify-space-between align-center flex-wrap gap-2">
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="mr-1" />
+                Total Products: <strong>@productsList.Count</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Success">
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                In Stock: <strong>@productsList.Count(p => p.QuantityInStock > 0)</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Error">
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Class="mr-1" />
+                Low Stock: <strong>@productsList.Count(p => p.QuantityInStock > 0 && p.QuantityInStock <= 10)</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Default">
+                <MudIcon Icon="@Icons.Material.Filled.RemoveCircle" Size="Size.Small" Class="mr-1" />
+                Out of Stock: <strong>@productsList.Count(p => p.QuantityInStock == 0)</strong>
+            </MudText>
+        </div>
     </MudPaper>
 }
 else
 {
-    <MudAlert Severity="Severity.Warning" Class="mt-4">Failed to load product data or no products found.</MudAlert>
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center text-center">
+                <MudIcon Icon="@Icons.Material.Filled.ProductionQuantityLimits"
+                         Size="Size.Large"
+                         Color="Color.Secondary"
+                         Class="mb-4 pulse-icon"
+                         Style="font-size: 5rem;" />
+                <MudText Typo="Typo.h6" Class="mb-2">No Products Available</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Start by adding your first product to the inventory.
+                </MudText>
+                <div class="d-flex gap-2">
+                    <MudButton Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="OpenAddDialog"
+                               StartIcon="@Icons.Material.Filled.Add">
+                        Add Product
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined"
+                               Color="Color.Secondary"
+                               OnClick="LoadDataAsync"
+                               StartIcon="@Icons.Material.Filled.Refresh">
+                        Retry
+                    </MudButton>
+                </div>
+            </div>
+        </MudCardContent>
+    </MudCard>
 }
 
+<style>
+    .page-header {
+        animation: slideInDown 0.5s ease-out;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .slide-in {
+        animation: slideInLeft 0.5s ease-out;
+    }
+
+    .slide-up {
+        animation: slideUp 0.5s ease-out;
+    }
+
+    .pulse-button {
+        animation: pulse 2s infinite;
+    }
+
+    .pulse-icon {
+        animation: pulse 3s infinite;
+    }
+
+    .data-table-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    ::deep .mud-table-row:hover {
+        background-color: rgba(16, 185, 129, 0.05) !important;
+        transform: scale(1.01);
+    }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+</style>
 
 @code {
     private bool isLoading = true;
     private List<ProductDto>? productsList;
+    private string _searchString = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
-        {
-            return;
-        }
+        if (!firstRender) return;
         await LoadDataAsync();
     }
 
@@ -62,7 +357,6 @@ else
         isLoading = true;
         StateHasChanged();
 
-
         var products = await ApiService.GetAsync<ApiService.ApiResponse<List<ProductDto>>>("/api/Products/all");
         productsList = products?.Data;
 
@@ -70,27 +364,32 @@ else
         StateHasChanged();
     }
 
+    private IEnumerable<ProductDto> GetFilteredProducts()
+    {
+        if (productsList == null) return Enumerable.Empty<ProductDto>();
+        if (string.IsNullOrWhiteSpace(_searchString)) return productsList;
+
+        return productsList.Where(p =>
+            p.ProductName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            p.CategoryName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            p.ProductDescription.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+            p.ProductID.ToString().Contains(_searchString)
+        );
+    }
+
+    private void OpenAddDialog() { }
+    private void OpenEditDialog(ProductDto product) { }
+    private void ViewProduct(ProductDto product) { }
+    private async Task DeleteProduct(ProductDto product) { }
 
     public class ProductDto
     {
-        [JsonPropertyName("productID")]
-        public int ProductID { get; set; }
-
-        [JsonPropertyName("productName")]
-        public string ProductName { get; set; } = string.Empty;
-
-        [JsonPropertyName("price")]
-        public decimal Price { get; set; }
-
-        [JsonPropertyName("quantityInStock")]
-        public int QuantityInStock { get; set; }
-
-        [JsonPropertyName("mainImageURL")]
-        public string MainImageURL { get; set; } = string.Empty;
-
-        [JsonPropertyName("categoryName")]
-        public string CategoryName { get; set; } = string.Empty;
-        [JsonPropertyName("productDescription")] // Added based on home API response
-        public string ProductDescription { get; set; } = string.Empty;
+        [JsonPropertyName("productID")] public int ProductID { get; set; }
+        [JsonPropertyName("productName")] public string ProductName { get; set; } = string.Empty;
+        [JsonPropertyName("price")] public decimal Price { get; set; }
+        [JsonPropertyName("quantityInStock")] public int QuantityInStock { get; set; }
+        [JsonPropertyName("mainImageURL")] public string MainImageURL { get; set; } = string.Empty;
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("productDescription")] public string ProductDescription { get; set; } = string.Empty;
     }
 }

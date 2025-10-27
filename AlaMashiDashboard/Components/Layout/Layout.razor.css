@@ -1,102 +1,212 @@
-﻿
+﻿/* ==========================================
+   Layout Responsive Styles
+   ========================================== */
+
+/* User Info */
 .user-info {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
 }
 
-.username {
-    color: white;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    margin-top: 0; /* يمنع الطلعة فوق */
-}
-
-.user-avatar {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.4);
+/* Logo Animation */
+.logo-img {
     transition: all 0.3s ease;
 }
 
-    .user-avatar:hover {
+    .logo-img:hover {
         transform: scale(1.05);
-        border-color: white;
     }
 
-/* 🔹 تحسين شكل الأفاتار والنص */
+/* Sidebar Customization */
+.custom-drawer {
+    background-color: var(--mud-palette-drawer-background);
+    color: var(--mud-palette-drawer-text);
+    border-right: 1px solid var(--mud-palette-divider);
+}
+
+/* Navigation Links Styling */
+::deep .mud-nav-link {
+    color: var(--mud-palette-drawer-text) !important;
+    margin: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    font-weight: 500;
+}
+
+    ::deep .mud-nav-link:hover {
+        background-color: rgba(34, 197, 94, 0.1) !important;
+        color: #16a34a !important;
+        transform: translateX(4px);
+    }
+
+    ::deep .mud-nav-link.active {
+        background-color: #16a34a !important;
+        color: white !important;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+    }
+
+    ::deep .mud-nav-link .mud-nav-link-icon {
+        margin-right: 12px;
+    }
+
+/* Main Content Area */
+.main-content {
+    background-color: var(--mud-palette-background);
+    min-height: 100vh;
+}
+
+.content-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* AppBar Improvements */
+::deep .mud-appbar {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+    ::deep .mud-appbar .mud-icon-button {
+        transition: transform 0.2s ease;
+    }
+
+        ::deep .mud-appbar .mud-icon-button:hover {
+            transform: scale(1.1);
+        }
+
+/* Drawer Header */
+::deep .mud-drawer-header {
+    border-bottom: 1px solid var(--mud-palette-divider);
+}
+
+/* ==========================================
+   Responsive Breakpoints
+   ========================================== */
+
+/* Mobile Portrait (xs: 0-600px) */
+@media (max-width: 599px) {
+    .content-wrapper {
+        padding: 1rem !important;
+    }
+
+    ::deep .mud-appbar {
+        padding: 0 0.5rem !important;
+    }
+
+    ::deep .mud-nav-link {
+        font-size: 0.875rem;
+        padding: 8px 12px;
+    }
+
+    ::deep .mud-drawer {
+        max-width: 260px !important;
+    }
+
+    .user-info {
+        display: none;
+    }
+}
+
+/* Tablet Portrait (sm: 600-960px) */
+@media (min-width: 600px) and (max-width: 959px) {
+    .content-wrapper {
+        padding: 1.5rem !important;
+    }
+
+    ::deep .mud-drawer {
+        max-width: 280px !important;
+    }
+}
+
+/* Tablet Landscape / Small Laptop (md: 960-1280px) */
+@media (min-width: 960px) and (max-width: 1279px) {
+    .content-wrapper {
+        padding: 2rem !important;
+    }
+}
+
+/* Desktop (lg: 1280-1920px) */
+@media (min-width: 1280px) {
+    .content-wrapper {
+        padding: 2.5rem !important;
+    }
+}
+
+/* Large Desktop (xl: 1920px+) */
+@media (min-width: 1920px) {
+    .content-wrapper {
+        max-width: 1600px;
+        padding: 3rem !important;
+    }
+}
+
+/* ==========================================
+   Dark Mode Enhancements
+   ========================================== */
+
+::deep .mud-theme-dark .mud-nav-link:hover {
+    background-color: rgba(34, 197, 94, 0.15) !important;
+    color: #86efac !important;
+}
+
+::deep .mud-theme-dark .mud-nav-link.active {
+    background-color: #22c55e !important;
+    color: #0f172a !important;
+}
+
+::deep .mud-theme-dark .custom-drawer {
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================
+   Animations & Transitions
+   ========================================== */
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.content-wrapper {
+    animation: slideIn 0.3s ease-out;
+}
+
+/* Smooth Drawer Toggle */
+::deep .mud-drawer {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Hover Effects */
 ::deep .mud-avatar {
-    border: 2px solid rgba(255, 255, 255, 0.4);
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
     ::deep .mud-avatar:hover {
         transform: scale(1.05);
-        border-color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.6);
     }
 
-.fw-bold {
-    font-weight: 600;
-}
+/* ==========================================
+   Print Styles
+   ========================================== */
 
-.border-white {
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    border-radius: 50%;
-    transition: 0.3s;
-}
-
-    .border-white:hover {
-        border-color: white;
-        transform: scale(1.05);
+@media print {
+    ::deep .mud-appbar,
+    ::deep .mud-drawer {
+        display: none !important;
     }
 
-/* 🎨 Sidebar base */
-.custom-drawer {
-    background-color: #1e293b !important; /* Dark navy */
-    color: white !important;
-}
-
-/* 🔹 Default menu item */
-::deep .mud-nav-link {
-    color: #e2e8f0 !important;
-    border-radius: 6px;
-    margin: 3px 8px;
-    transition: all 0.25s ease;
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
-}
-
-    /* 🖱️ Hover effect */
-    ::deep .mud-nav-link:hover {
-        background-color: #ffffff !important;
-        color: #1e293b !important;
-        transform: translateX(3px);
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
     }
-
-        ::deep .mud-nav-link:hover .mud-icon-root {
-            color: #1e293b !important;
-        }
-
-    /* ✅ Active (current page) */
-    ::deep .mud-nav-link.active {
-        background-color: #ffffff !important;
-        color: #1e293b !important;
-        font-weight: bold;
-        box-shadow: inset 3px 0 0 0 #3b82f6; /* Blue line on left */
-    }
-
-        ::deep .mud-nav-link.active .mud-icon-root {
-            color: #1e293b !important;
-        }
-
-/* 🔹 Logo hover */
-.mud-drawer-header img {
-    transition: transform 0.3s ease;
 }
-
-    .mud-drawer-header img:hover {
-        transform: scale(1.05);
-    }
