@@ -1,0 +1,86 @@
+﻿@page "/categories"
+
+
+<PageTitle>Category Management</PageTitle>
+
+<div class="page-header centered">
+    <h1 class="page-title">📂 Categories</h1>
+    <p class="page-subtitle">Manage and organize all product categories easily.</p>
+</div>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (categoriesList != null && categoriesList.Any())
+{
+    <MudTable Items="@categoriesList" Hover="true" Striped="true" Elevation="2">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Category Name</MudTh>
+            <MudTh>Icon Name</MudTh>
+            <MudTh>Parent Category</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.CategoryId</MudTd>
+            <MudTd DataLabel="اسم الفئة">@context.CategoryName</MudTd>
+            <MudTd DataLabel="اسم الأيقونة">@context.IconName</MudTd>
+            <MudTd DataLabel="ID الأب">@context.ParentId</MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+}
+else
+{
+    <MudText Color="Color.Error">فشل تحميل بيانات الفئات أو لا يوجد فئات.</MudText>
+}
+
+
+@code {
+    private bool isLoading = true;
+    private List<CategoryDto>? categoriesList;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        await LoadDataAsync();
+    }
+
+
+    private async Task LoadDataAsync()
+    {
+        categoriesList = null;
+        isLoading = true;
+        StateHasChanged();
+
+        var categories = await ApiService.GetAsync<ApiService.ApiResponse<List<CategoryDto>>>("/api/Categories/flat");
+        categoriesList = categories?.Data;
+
+        isLoading = false;
+        StateHasChanged();
+
+    }
+    
+
+
+    public class CategoryDto
+    {
+        [JsonPropertyName("categoryId")]
+        public int CategoryId { get; set; }
+
+        [JsonPropertyName("categoryName")]
+        public string CategoryName { get; set; }
+
+        [JsonPropertyName("iconName")]
+        public string IconName { get; set; }
+
+        [JsonPropertyName("parentId")]
+        public int? ParentId { get; set; }
+    }
+}

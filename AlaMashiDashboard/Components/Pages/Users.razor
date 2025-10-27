@@ -1,0 +1,81 @@
+﻿@page "/users"
+
+<PageTitle>User Management</PageTitle>
+
+<div class="page-header centered">
+    <h1 class="page-title">👥 User Management</h1>
+    <p class="page-subtitle">Manage and view all registered users in the system.</p>
+</div>
+
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (usersList != null && usersList.Any())
+{
+    <MudTable Items="@usersList" Hover="true" Striped="true" Elevation="2" Dense="true" Bordered="true">
+        <HeaderContent>
+            <MudTh>ID</MudTh>
+            <MudTh>Username</MudTh>
+            <MudTh>Email</MudTh>
+            <MudTh>Phone</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="ID">@context.UserId</MudTd>
+            <MudTd DataLabel="Username">@context.UserName</MudTd>
+            <MudTd DataLabel="Email">@context.Email</MudTd>
+            <MudTd DataLabel="Phone">@context.Phone</MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+}
+else
+{
+    <MudText Color="Color.Error">فشل تحميل بيانات المستخدمين أو لا يوجد مستخدمين.</MudText>
+}
+
+
+
+@code {
+    private bool isLoading = true;
+    private List<UserDto>? usersList;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        usersList = null;
+        isLoading = true;
+        StateHasChanged();
+
+        var usersL = await ApiService.GetAsync<ApiService.ApiResponse<List<UserDto>>>("/api/Users/all");
+        usersList = usersL?.Data;
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    public class UserDto
+    {
+        [JsonPropertyName("userId")]
+        public int UserId { get; set; }
+
+        [JsonPropertyName("userName")]
+        public string UserName { get; set; }
+
+        [JsonPropertyName("email")]
+        public string Email { get; set; }
+
+        [JsonPropertyName("phone")]
+        public string Phone { get; set; }
+    }
+}

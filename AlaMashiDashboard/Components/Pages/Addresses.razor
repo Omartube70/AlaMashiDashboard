@@ -1,0 +1,86 @@
+﻿@page "/addresses"
+
+<PageTitle>Address Management</PageTitle>
+
+<div class="page-header centered">
+    <h1 class="page-title">📍 Addresses</h1>
+    <p class="page-subtitle">View and manage user delivery addresses.</p>
+</div>
+
+
+@if (isLoading)
+{
+    <div class="d-flex justify-center mt-4">
+        <MudProgressCircular Indeterminate="true" />
+    </div>
+}
+else if (addressesList != null && addressesList.Any())
+{
+    <MudPaper Elevation="2" Class="mt-4">
+        <MudTable Items="@addressesList" Hover="true" Striped="true" Dense="true" Bordered="true">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>Street</MudTh>
+                <MudTh>City</MudTh>
+                <MudTh>Details</MudTh>
+                <MudTh>Type</MudTh>
+                <MudTh>User ID</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="ID">@context.AddressId</MudTd>
+                <MudTd DataLabel="Street">@context.Street</MudTd>
+                <MudTd DataLabel="City">@context.City</MudTd>
+                <MudTd DataLabel="Details">@context.AddressDetails</MudTd>
+                <MudTd DataLabel="Type">@context.AddressType</MudTd>
+                <MudTd DataLabel="User ID">@context.UserId</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+}
+else
+{
+    <MudAlert Severity="Severity.Warning" Class="mt-4">Failed to load address data or no addresses found.</MudAlert>
+}
+
+
+@code {
+    private bool isLoading = true;
+    private List<AddressDto>? addressesList;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+              return;
+
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        addressesList = null;
+        isLoading = true;
+        StateHasChanged();
+
+        var addresses = await ApiService.GetAsync<ApiService.ApiResponse<List<AddressDto>>>("/api/Addresses/all");
+        addressesList = addresses?.Data;
+
+        isLoading = false;
+        StateHasChanged();
+
+    }
+
+
+
+    public class AddressDto
+    {
+        [JsonPropertyName("addressId")] public int AddressId { get; set; }
+        [JsonPropertyName("street")] public string Street { get; set; } = string.Empty;
+        [JsonPropertyName("city")] public string City { get; set; } = string.Empty;
+        [JsonPropertyName("addressDetails")] public string AddressDetails { get; set; } = string.Empty;
+        [JsonPropertyName("addressType")] public string AddressType { get; set; } = string.Empty; // API returns string "home"/"Work"
+        [JsonPropertyName("userId")] public int UserId { get; set; }
+    }
+}

@@ -1,0 +1,127 @@
+﻿<link href="css/tables.css" rel="stylesheet" />
+
+<MudThemeProvider Theme="_theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+
+    <MudAppBar Elevation="0" Color="Color.Primary" Dense="true" Class="px-4 d-flex align-items-center">
+        <!-- 🔹 زر القائمة -->
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" OnClick="@ToggleDrawer" />
+
+        <!-- 🔹 اسم المشروع -->
+        <div class="d-flex align-items-center ml-2">
+            <MudText Typo="Typo.h6" Class="text-white font-bold">
+                AlaMashi Dashboard
+            </MudText>
+        </div>
+
+        <MudSpacer />
+
+        <!-- 🔹 User Info Section -->
+        <div class="d-flex align-items-center user-info">
+
+            <!-- 🔸 اسم المستخدم -->
+            <MudText Typo="Typo.body1" Class="text-white fw-bold username">@_userName</MudText>
+
+            <!-- 🔸 أيقونة المستخدم الجديدة -->
+            <MudAvatar Color="Color.Transparent" Size="Size.Medium" Class="user-avatar ml-2">
+                <MudIcon Icon="@Icons.Material.Filled.Man" Style="font-size:32px;" />
+            </MudAvatar>
+
+            <!-- 🔸 قائمة الخيارات -->
+            <MudMenu Icon="@Icons.Material.Filled.ArrowDropDown"
+                     Color="Color.Inherit"
+                     Dense="true"
+                     AnchorOrigin="Origin.BottomRight"
+                     TransformOrigin="Origin.TopRight"
+                     Class="ml-1">
+                <MudMenuItem Disabled="true">
+                    <MudText Typo="Typo.body2">Welcome, @_userName 👋</MudText>
+                </MudMenuItem>
+                <MudDivider />
+                <MudMenuItem>
+                    <MudIcon Icon="@Icons.Material.Filled.Settings" Class="mr-2" />
+                    Profile Settings
+                </MudMenuItem>
+                <MudMenuItem OnClick="LogoutUser">
+                    <MudIcon Icon="@Icons.Material.Filled.Logout" Class="mr-2" />
+                    Logout
+                </MudMenuItem>
+            </MudMenu>
+        </div>
+
+    </MudAppBar>
+
+    <!-- 🔹 Sidebar Navigation -->
+    <MudDrawer @bind-Open="_drawerOpen"
+               Elevation="2"
+               Variant="DrawerVariant.Mini"
+               Class="custom-drawer">
+
+        <MudDrawerHeader Class="justify-center">
+            <img src="https://raw.githubusercontent.com/Omartube70/AlaMashi.API/master/AlaMashi.API/.assets/logo.png"
+                 alt="AlaMashi Logo"
+                 width="50"
+                 style="border-radius:8px;" />
+        </MudDrawerHeader>
+
+        <MudNavMenu>
+            <MudNavLink Href="/" Icon="@Icons.Material.Filled.Dashboard">Dashboard</MudNavLink>
+            <MudNavLink Href="/users" Icon="@Icons.Material.Filled.People">Users</MudNavLink>
+            <MudNavLink Href="/categories" Icon="@Icons.Material.Filled.Category">Categories</MudNavLink>
+            <MudNavLink Href="/products" Icon="@Icons.Material.Filled.Inventory">Products</MudNavLink>
+            <MudNavLink Href="/offers" Icon="@Icons.Material.Filled.LocalOffer">Offers</MudNavLink>
+            <MudNavLink Href="/addresses" Icon="@Icons.Material.Filled.LocationOn">Addresses</MudNavLink>
+        </MudNavMenu>
+    </MudDrawer>
+
+    <!-- 🔹 Main Content -->
+    <MudMainContent Class="p-6" Style="background-color:#f9fafb; min-height:100vh;">
+        @Body
+    </MudMainContent>
+
+</MudLayout>
+
+@code {
+    private bool _drawerOpen = true;
+    private string _userName = "User";
+
+    private MudTheme _theme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#3b82f6",
+            Secondary = "#10b981",
+            Background = "#f9fafb",
+            AppbarBackground = "#3b82f6",
+            DrawerBackground = "#1e293b",
+            DrawerText = "#ffffff",
+            TextPrimary = "#111827"
+        }
+    };
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        TokenManager.OnUserNameChanged += async () =>
+       {
+          _userName = await TokenManager.GetUserNameAsync() ?? "User";
+          await InvokeAsync(StateHasChanged);
+       };
+
+       var name = await TokenManager.GetUserNameAsync();
+        if (!string.IsNullOrWhiteSpace(name))
+           _userName = name;
+    }
+
+
+    private async Task LogoutUser()
+    {
+        await TokenManager.ClearTokensAsync();
+        NavManager.NavigateTo("/login", forceLoad: true);
+    }
+}

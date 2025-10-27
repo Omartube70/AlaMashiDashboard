@@ -1,0 +1,102 @@
+﻿
+.user-info {
+    display: flex;
+    align-items: center;
+}
+
+.username {
+    color: white;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    margin-top: 0; /* يمنع الطلعة فوق */
+}
+
+.user-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+}
+
+    .user-avatar:hover {
+        transform: scale(1.05);
+        border-color: white;
+    }
+
+/* 🔹 تحسين شكل الأفاتار والنص */
+::deep .mud-avatar {
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    transition: all 0.2s ease;
+}
+
+    ::deep .mud-avatar:hover {
+        transform: scale(1.05);
+        border-color: #ffffff;
+    }
+
+.fw-bold {
+    font-weight: 600;
+}
+
+.border-white {
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+    .border-white:hover {
+        border-color: white;
+        transform: scale(1.05);
+    }
+
+/* 🎨 Sidebar base */
+.custom-drawer {
+    background-color: #1e293b !important; /* Dark navy */
+    color: white !important;
+}
+
+/* 🔹 Default menu item */
+::deep .mud-nav-link {
+    color: #e2e8f0 !important;
+    border-radius: 6px;
+    margin: 3px 8px;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+}
+
+    /* 🖱️ Hover effect */
+    ::deep .mud-nav-link:hover {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        transform: translateX(3px);
+    }
+
+        ::deep .mud-nav-link:hover .mud-icon-root {
+            color: #1e293b !important;
+        }
+
+    /* ✅ Active (current page) */
+    ::deep .mud-nav-link.active {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        font-weight: bold;
+        box-shadow: inset 3px 0 0 0 #3b82f6; /* Blue line on left */
+    }
+
+        ::deep .mud-nav-link.active .mud-icon-root {
+            color: #1e293b !important;
+        }
+
+/* 🔹 Logo hover */
+.mud-drawer-header img {
+    transition: transform 0.3s ease;
+}
+
+    .mud-drawer-header img:hover {
+        transform: scale(1.05);
+    }

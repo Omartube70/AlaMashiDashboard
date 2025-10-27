@@ -1,0 +1,259 @@
+﻿@page "/"
+@inject IHttpClientFactory HttpClientFactory
+@using System.Net.Http.Json
+@using System.Text.Json.Serialization
+@using System.Net.Http.Headers
+@inject TokenManagerService TokenManager
+@inject NavigationManager NavManager
+@inject IConfiguration Config
+
+<PageTitle>Dashboard</PageTitle>
+
+<MudGrid Spacing="3">
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Height="150px">
+            <MudText Typo="Typo.h6">Total Users 👤</MudText>
+            @if (isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" Class="mt-4" />
+            }
+            else if (summaryData != null)
+            {
+                {/* Display TotalUsers */}
+                <MudText Typo="Typo.h2" Class="mt-4">@summaryData.TotalUsers</MudText>
+            }
+            else
+            {
+                <MudText Color="Color.Error">Load Failed</MudText>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Height="150px">
+            <MudText Typo="Typo.h6">Total Products 📦</MudText>
+            @if (isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" Class="mt-4" />
+            }
+            else if (summaryData != null)
+            {
+                {/* Display TotalProducts */}
+                <MudText Typo="Typo.h2" Class="mt-4">@summaryData.TotalProducts</MudText>
+            }
+            else
+            {
+                <MudText Color="Color.Error">Load Failed</MudText>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Height="150px">
+            <MudText Typo="Typo.h6">Total Categories 📚</MudText>
+            @if (isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" Class="mt-4" />
+            }
+            else if (summaryData != null)
+            {
+                {/* Display TotalCategories */}
+                <MudText Typo="Typo.h2" Class="mt-4">@summaryData.TotalCategories</MudText>
+            }
+            else
+            {
+                <MudText Color="Color.Error">Load Failed</MudText>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4" Height="150px">
+            <MudText Typo="Typo.h6">Active Offers 🏷️</MudText>
+            @if (isLoading)
+            {
+                <MudProgressCircular Indeterminate="true" Class="mt-4" />
+            }
+            else if (summaryData != null)
+            {
+                {/* Display TotalActiveOffers */}
+                <MudText Typo="Typo.h2" Class="mt-4">@summaryData.TotalActiveOffers</MudText>
+            }
+            else
+            {
+                <MudText Color="Color.Error">Load Failed</MudText>
+            }
+        </MudPaper>
+    </MudItem>
+
+
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6">Product Distribution by Category</MudText>
+            @if (isLoading)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="300px" Class="mt-4" />
+            }
+            else
+            {
+                {/* Pie chart remains with dummy data */}
+                <MudChart ChartType="ChartType.Pie" InputData="@pieChartData" InputLabels="@pieChartLabels" Width="100%" Height="300px"></MudChart>
+            }
+        </MudPaper>
+    </MudItem>
+
+    <MudItem xs="12" md="6">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6">New Products Added Monthly</MudText>
+            @if (isLoading)
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="300px" Class="mt-4" />
+            }
+            else
+            {
+                {/* Line chart remains with dummy data */}
+                <MudChart ChartType="ChartType.Line" ChartSeries="@lineChartSeries" XAxisLabels="@lineChartXLabels" Width="100%" Height="300px"></MudChart>
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+
+@code {
+    private bool isLoading = true;
+    // Updated variable to hold summary data
+    private DashboardSummaryDto? summaryData;
+
+    // Dummy data for charts (remains the same)
+    private double[] pieChartData = { 25, 15, 30, 10, 20 };
+    private string[] pieChartLabels = { "Groceries", "Fruits", "Pharmacy", "Bakery", "Dairy" };
+    private List<ChartSeries> lineChartSeries = new List<ChartSeries>()
+    {
+        new ChartSeries() { Name = "New Products", Data = new double[] { 10, 15, 12, 18, 20, 25 } }
+    };
+    private string[] lineChartXLabels = { "May", "June", "July", "Aug", "Sept", "Oct" };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        // Reset state
+        summaryData = null; // Reset summary data
+        isLoading = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var accessToken = await TokenManager.GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                NavManager.NavigateTo("/login");
+                return;
+            }
+
+            var httpClient = HttpClientFactory.CreateClient("Api");
+            httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", accessToken);
+
+            // Call the NEW dashboard summary endpoint
+            var apiResponse = await httpClient.GetFromJsonAsync<ApiResponse<DashboardSummaryDto>>("/api/Dashboard/summary");
+            if (apiResponse != null && apiResponse.Status == "success")
+            {
+                summaryData = apiResponse.Data; // Store the summary data
+            }
+            else
+            {
+                Console.WriteLine($"API returned status: {apiResponse?.Status ?? "unknown"} for dashboard summary.");
+                summaryData = null;
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            Console.WriteLine("Unauthorized access fetching summary. Attempting token refresh...");
+            bool refreshed = await TryRefreshTokenAsync();
+            if (refreshed)
+            {
+                Console.WriteLine("Token refreshed successfully. Retrying summary fetch...");
+                await LoadDataAsync(); // Retry the call
+                return; // Exit
+            }
+            else
+            {
+                Console.WriteLine("Token refresh failed. Redirecting to login.");
+                NavManager.NavigateTo("/login");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching dashboard summary: {ex.Message}");
+            summaryData = null;
+        }
+        finally
+        {
+            isLoading = false;
+            await InvokeAsync(StateHasChanged); // Ensure UI update
+        }
+    }
+
+    // Refresh token logic remains the same
+    private async Task<bool> TryRefreshTokenAsync()
+    {
+        var refreshToken = await TokenManager.GetRefreshTokenAsync();
+        if (string.IsNullOrEmpty(refreshToken)) return false;
+
+        using var refreshClient = new HttpClient();
+        var baseAddress = Config["ApiBaseAddress"];
+        if (string.IsNullOrEmpty(baseAddress)) return false;
+        var requestBody = new { refreshToken = refreshToken };
+
+        try
+        {
+            var response = await refreshClient.PostAsJsonAsync($"{baseAddress}/api/Users/refresh", requestBody);
+            if (response.IsSuccessStatusCode)
+            {
+                var wrappedResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
+                var newTokens = wrappedResponse?.Data;
+                if (newTokens != null)
+                {
+                    await TokenManager.SetTokensAsync(newTokens.AccessToken, newTokens.RefreshToken);
+                    return true;
+                }
+            }
+        }
+        catch { }
+        return false;
+    }
+
+    // --- DTO Classes matching the NEW API endpoint ---
+
+    // Generic Wrapper (can be reused)
+    public class ApiResponse<T>
+    {
+        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+        [JsonPropertyName("data")] public T Data { get; set; } = default!;
+    }
+
+    // DTO for the dashboard summary data
+    public class DashboardSummaryDto
+    {
+        [JsonPropertyName("totalUsers")] public int TotalUsers { get; set; }
+        [JsonPropertyName("totalProducts")] public int TotalProducts { get; set; }
+        [JsonPropertyName("totalCategories")] public int TotalCategories { get; set; }
+        [JsonPropertyName("totalActiveOffers")] public int TotalActiveOffers { get; set; }
+        // Add other properties if your API returns them (e.g., TotalOrders, TotalRevenue)
+    }
+
+    // DTO for the refresh token response (remains the same)
+    private class AuthResponse
+    {
+        [JsonPropertyName("accessToken")] public string AccessToken { get; set; } = string.Empty;
+        [JsonPropertyName("refreshToken")] public string RefreshToken { get; set; } = string.Empty;
+    }
+}

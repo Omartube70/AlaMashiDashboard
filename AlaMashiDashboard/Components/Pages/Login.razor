@@ -1,0 +1,126 @@
+﻿@page "/login"
+@using System.Text.RegularExpressions
+
+<PageTitle>Login</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraSmall" Class="mt-16">
+
+    <div class="login-header">
+        <h1 class="login-title">🔐 Admin Login</h1>
+        <p class="login-subtitle">Only administrators can access the dashboard.</p>
+    </div>
+
+    <MudCard Elevation="3" Class="login-card">
+        <MudCardContent>
+            <MudForm @ref="_form" >
+
+                <MudTextField @bind-Value="_email"
+                              Label="Email Address"
+                              Variant="Variant.Outlined"
+                              FullWidth="true"
+                              For="@(() => _email)"
+                              Immediate="true"
+                              Required="true"
+                              RequiredError="Email is required"
+                              Validation="@(new Func<string, string>(ValidateEmail))"
+                              Class="mb-3" />
+
+                <MudTextField @bind-Value="_password"
+                              Label="Password"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Password"
+                              FullWidth="true"
+                              For="@(() => _password)"
+                              Immediate="true"
+                              Required="true"
+                              RequiredError="Password is required"
+                              Validation="@(new Func<string, string>(ValidatePassword))" />
+
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <MudText Color="Color.Error" Class="mt-2">@_errorMessage</MudText>
+                }
+
+            </MudForm>
+        </MudCardContent>
+
+        <MudCardActions Class="justify-between">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="HandleLogin"
+                       Class="px-6 py-2 mud-elevation-hover"
+                       Style="font-weight:bold; font-size:1rem;">
+                Login
+            </MudButton>
+
+            <MudButton Variant="Variant.Text"
+                       Color="Color.Secondary"
+                       OnClick="NavigateToForgotPassword"
+                       Class="px-4 py-2"
+                       Style="font-weight:bold; text-decoration:underline;">
+                Forgot Password?
+            </MudButton>
+        </MudCardActions>
+
+    </MudCard>
+</MudContainer>
+
+@code {
+    private string _email = "";
+    private string _password = "";
+    private string _errorMessage = "";
+    private MudForm? _form;
+
+    private string? ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return "Email is required";
+        var regex = new Regex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$");
+        return regex.IsMatch(email) ? null : "Invalid email format";
+    }
+
+    private string? ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password)) 
+            return "Password is required";
+
+        if (password.Length < 8) 
+            return "Password must be at least 8 characters";
+
+        // تحقق من وجود رقم
+        if (!password.Any(char.IsDigit)) 
+            return "Password must contain at least one number";
+
+        // تحقق من وجود حرف خاص
+        var specialChars = "!@#$%^&*(),.?\":{}|<>";
+        if (!password.Any(c => specialChars.Contains(c))) 
+            return "Password must contain at least one special character";
+
+        return null; // كل حاجة تمام
+    }
+
+
+    private async Task HandleLogin()
+    {
+        _errorMessage = "";
+
+        if (_form == null) return;
+
+        await _form.Validate();
+        if (!_form.IsValid) return; // لو فيه خطأ في الفاليديشن ما نكملش
+
+        bool success = await ApiService.LoginAsync(_email, _password);
+
+        if (success)
+        {
+            NavManager.NavigateTo("/");
+        }
+        else
+        {
+            _errorMessage = "Invalid email or password.";
+        }
+    }
+    private void NavigateToForgotPassword()
+    {
+        NavManager.NavigateTo("/ForgotPassword");
+    }
+}

@@ -1,0 +1,84 @@
+﻿@page "/offers"
+
+
+<PageTitle>Offer Management</PageTitle>
+
+<div class="page-header centered">
+    <h1 class="page-title">🏷️ Offers</h1>
+    <p class="page-subtitle">Create and control discounts or promotional offers.</p>
+</div>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-center mt-4">
+        <MudProgressCircular Indeterminate="true" />
+    </div>
+}
+else if (offersList != null && offersList.Any())
+{
+    <MudPaper Elevation="2" Class="mt-4">
+        <MudTable Items="@offersList" Hover="true" Striped="true" Dense="true" Bordered="true">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>Title</MudTh>
+                <MudTh>Description</MudTh>
+                <MudTh>Discount (%)</MudTh>
+                <MudTh>Start Date</MudTh>
+                <MudTh>End Date</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="ID">@context.OfferID</MudTd>
+                <MudTd DataLabel="Title">@context.Title</MudTd>
+                <MudTd DataLabel="Description">@context.Description</MudTd>
+                <MudTd DataLabel="Discount (%)">@context.DiscountPercentage</MudTd>
+                <MudTd DataLabel="Start Date">@context.StartDate.ToShortDateString()</MudTd>
+                <MudTd DataLabel="End Date">@context.EndDate.ToShortDateString()</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+}
+else
+{
+    <MudAlert Severity="Severity.Warning" Class="mt-4">Failed to load offer data or no offers found.</MudAlert>
+}
+
+
+@code {
+    private bool isLoading = true;
+    private List<OfferDto>? offersList;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        offersList = null;
+        isLoading = true;
+        StateHasChanged();
+
+
+        var offers = await ApiService.GetAsync<ApiService.ApiResponse<List<OfferDto>>>("/api/Offers/All");
+        offersList = offers?.Data;
+
+        isLoading = false;
+        StateHasChanged();
+
+    }
+
+
+    public class OfferDto
+    {
+        [JsonPropertyName("offerID")] public int OfferID { get; set; }
+        [JsonPropertyName("title")] public string Title { get; set; } = string.Empty;
+        [JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
+        [JsonPropertyName("discountPercentage")] public decimal DiscountPercentage { get; set; }
+        [JsonPropertyName("startDate")] public DateTime StartDate { get; set; }
+        [JsonPropertyName("endDate")] public DateTime EndDate { get; set; }
+    }
+}

@@ -1,0 +1,96 @@
+﻿@page "/products"
+
+<PageTitle>Product Management</PageTitle>
+
+<div class="page-header centered">
+    <h1 class="page-title">🛍️ Products</h1>
+    <p class="page-subtitle">Add, edit, and manage all available products in the system.</p>
+</div>
+
+@if (isLoading)
+{
+    <div class="d-flex justify-center mt-4">
+        <MudProgressCircular Indeterminate="true" />
+    </div>
+}
+else if (productsList != null && productsList.Any())
+{
+    <MudPaper Elevation="2" Class="mt-4">
+        <MudTable Items="@productsList" Hover="true" Striped="true" Dense="true" Bordered="true">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>Product Name</MudTh>
+                <MudTh>Price</MudTh>
+                <MudTh>Stock</MudTh>
+                <MudTh>Category</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="ID">@context.ProductID</MudTd>
+                <MudTd DataLabel="Product Name">@context.ProductName</MudTd>
+                <MudTd DataLabel="Price">@context.Price.ToString("C")</MudTd>
+                <MudTd DataLabel="Stock">@context.QuantityInStock</MudTd>
+                <MudTd DataLabel="Category">@context.CategoryName</MudTd>
+            </RowTemplate>
+            <PagerContent>
+                <MudTablePager />
+            </PagerContent>
+        </MudTable>
+    </MudPaper>
+}
+else
+{
+    <MudAlert Severity="Severity.Warning" Class="mt-4">Failed to load product data or no products found.</MudAlert>
+}
+
+
+@code {
+    private bool isLoading = true;
+    private List<ProductDto>? productsList;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        productsList = null;
+        isLoading = true;
+        StateHasChanged();
+
+
+        var products = await ApiService.GetAsync<ApiService.ApiResponse<List<ProductDto>>>("/api/Products/all");
+        productsList = products?.Data;
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+
+    public class ProductDto
+    {
+        [JsonPropertyName("productID")]
+        public int ProductID { get; set; }
+
+        [JsonPropertyName("productName")]
+        public string ProductName { get; set; } = string.Empty;
+
+        [JsonPropertyName("price")]
+        public decimal Price { get; set; }
+
+        [JsonPropertyName("quantityInStock")]
+        public int QuantityInStock { get; set; }
+
+        [JsonPropertyName("mainImageURL")]
+        public string MainImageURL { get; set; } = string.Empty;
+
+        [JsonPropertyName("categoryName")]
+        public string CategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("productDescription")] // Added based on home API response
+        public string ProductDescription { get; set; } = string.Empty;
+    }
+}
