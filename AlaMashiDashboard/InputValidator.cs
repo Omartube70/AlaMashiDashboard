@@ -1,4 +1,6 @@
-﻿public static class InputValidator
+﻿using System.Text.RegularExpressions;
+
+public static class InputValidator
 {
     private static readonly string _emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
     private static readonly string _specialChars = "!@#$%^&*(),.?\":{}|<>";
@@ -18,5 +20,16 @@
         if (!password.Any(char.IsDigit)) return "Password must contain at least one number";
         if (!password.Any(c => _specialChars.Contains(c))) return "Password must contain at least one special character";
         return null;
+    }
+
+    public static string? ValidateOtp(string otp)
+    {
+        if (string.IsNullOrWhiteSpace(otp))
+            return "OTP code is required.";
+
+        if (!Regex.IsMatch(otp, @"^\d{6}$"))
+            return "OTP must be a 6-digit number.";
+
+        return null; // ✅ valid
     }
 }

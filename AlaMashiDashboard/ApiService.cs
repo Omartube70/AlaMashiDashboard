@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Serialization;
+using static System.Net.WebRequestMethods;
 
 public class ApiService
 {
@@ -190,9 +191,14 @@ public class ApiService
         return result != null;
     }
 
-    public async Task<bool> ResetPasswordAsync(string email, string newPassword)
+    public async Task<bool> ResetPasswordAsync(string email,string otp, string newPassword)
     {
-        var request = new { email, password = newPassword };
+        var request = new
+        {
+            Email = email,
+            Otp = otp,
+            NewPassword = newPassword
+        };
         var result = await PostWithoutAuthAsync<ApiResponse<object>>("/api/Users/reset-password", request);
         return result != null;
     }
