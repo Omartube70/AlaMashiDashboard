@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using System.IdentityModel.Tokens.Jwt;
 using System;
 using System.Threading.Tasks;
 
@@ -82,6 +83,38 @@ public class TokenManagerService
         }
     }
 
+    public async Task<int?> GetUserIdAsync()
+    {
+        try
+        {
+            await EnsureInitializedAsync();
+            var token = await GetAccessTokenAsync();
+
+            if (string.IsNullOrEmpty(token))
+                return null;
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+
+            // حاول العثور على user ID من مختلف أسماء الـ claims
+            var userIdClaim = jwtToken.Claims.FirstOrDefault(c =>
+                c.Type == "sub" ||
+                c.Type == "userId" ||
+                c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier" ||
+                c.Type == "oid");
+
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
+                return userId;
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error getting user ID from token: {ex.Message}");
+            return null;
+        }
+    }
+
     public async Task ClearTokensAsync()
     {
         try
@@ -98,3 +131,4 @@ public class TokenManagerService
         }
     }
 }
+

@@ -1,4 +1,5 @@
-﻿using AlaMashiDashboard.Components;
+﻿using AdminDashboard.Services;
+using AlaMashiDashboard.Components;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using MudBlazor.Services;
 
@@ -22,6 +23,7 @@ builder.Services.AddMudServices(config =>
 
 builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddScoped<ApiService>();
+builder.Services.AddScoped<LocalizationService>(); // ✅ إضافة خدمة الترجمة
 
 builder.Services.AddScoped<TokenManagerService>();
 

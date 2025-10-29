@@ -1,5 +1,5 @@
 ﻿/* ==========================================
-   Layout Responsive Styles
+   Layout Responsive Styles with RTL Support
    ========================================== */
 
 /* User Info */
@@ -22,11 +22,21 @@
 .custom-drawer {
     background-color: var(--mud-palette-drawer-background);
     color: var(--mud-palette-drawer-text);
+    transition: all 0.3s ease;
+}
+
+/* LTR Border */
+[dir="ltr"] .custom-drawer {
     border-right: 1px solid var(--mud-palette-divider);
 }
 
-/* Navigation Links Styling */
-::deep .mud-nav-link {
+/* RTL Border */
+[dir="rtl"] .custom-drawer {
+    border-left: 1px solid var(--mud-palette-divider);
+}
+
+/* Navigation Links Styling - LTR */
+[dir="ltr"] ::deep .mud-nav-link {
     color: var(--mud-palette-drawer-text) !important;
     margin: 4px 8px;
     border-radius: 8px;
@@ -34,22 +44,45 @@
     font-weight: 500;
 }
 
-    ::deep .mud-nav-link:hover {
+    [dir="ltr"] ::deep .mud-nav-link:hover {
         background-color: rgba(34, 197, 94, 0.1) !important;
         color: #16a34a !important;
         transform: translateX(4px);
     }
 
-    ::deep .mud-nav-link.active {
-        background-color: #16a34a !important;
-        color: white !important;
-        font-weight: 600;
-        box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+/* Navigation Links Styling - RTL */
+[dir="rtl"] ::deep .mud-nav-link {
+    color: var(--mud-palette-drawer-text) !important;
+    margin: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+    font-weight: 500;
+}
+
+    [dir="rtl"] ::deep .mud-nav-link:hover {
+        background-color: rgba(34, 197, 94, 0.1) !important;
+        color: #16a34a !important;
+        transform: translateX(-4px);
     }
 
-    ::deep .mud-nav-link .mud-nav-link-icon {
-        margin-right: 12px;
-    }
+/* Active Link */
+::deep .mud-nav-link.active {
+    background-color: #16a34a !important;
+    color: white !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
+/* Nav Icon Spacing - LTR */
+[dir="ltr"] ::deep .mud-nav-link .mud-nav-link-icon {
+    margin-right: 12px;
+}
+
+/* Nav Icon Spacing - RTL */
+[dir="rtl"] ::deep .mud-nav-link .mud-nav-link-icon {
+    margin-left: 12px;
+    margin-right: 0;
+}
 
 /* Main Content Area */
 .main-content {
@@ -175,8 +208,24 @@
     }
 }
 
-.content-wrapper {
+@keyframes slideInRTL {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+[dir="ltr"] .content-wrapper {
     animation: slideIn 0.3s ease-out;
+}
+
+[dir="rtl"] .content-wrapper {
+    animation: slideInRTL 0.3s ease-out;
 }
 
 /* Smooth Drawer Toggle */
@@ -193,6 +242,35 @@
     ::deep .mud-avatar:hover {
         transform: scale(1.05);
         border-color: rgba(255, 255, 255, 0.6);
+    }
+
+/* ==========================================
+   RTL Specific Adjustments
+   ========================================== */
+
+/* RTL Text Alignment */
+[dir="rtl"] {
+    text-align: right;
+}
+
+    [dir="rtl"] ::deep .mud-table {
+        direction: rtl;
+    }
+
+    [dir="rtl"] ::deep .mud-menu-item {
+        text-align: right;
+    }
+
+    /* RTL Drawer Position */
+    [dir="rtl"] ::deep .mud-drawer-anchor-right {
+        right: auto;
+        left: 0;
+    }
+
+    /* RTL Main Content Padding */
+    [dir="rtl"] ::deep .mud-main-content {
+        padding-right: 0;
+        padding-left: 0;
     }
 
 /* ==========================================

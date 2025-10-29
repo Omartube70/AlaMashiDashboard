@@ -2,8 +2,9 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
-using static System.Net.WebRequestMethods;
 
 public class ApiService
 {
@@ -33,7 +34,7 @@ public class ApiService
         try
         {
             var response = await client.PostAsJsonAsync("/api/Users/login", loginCommand);
-            if (!response.IsSuccessStatusCode) 
+            if (!response.IsSuccessStatusCode)
                 return false;
 
             var wrappedResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
@@ -58,13 +59,13 @@ public class ApiService
     public async Task<bool> RefreshTokenAsync()
     {
         var refreshToken = await _tokenManager.GetRefreshTokenAsync();
-        if (string.IsNullOrEmpty(refreshToken)) 
+        if (string.IsNullOrEmpty(refreshToken))
             return false;
 
         using var client = new HttpClient();
         var baseAddress = _config["ApiBaseAddress"];
 
-        if (string.IsNullOrEmpty(baseAddress)) 
+        if (string.IsNullOrEmpty(baseAddress))
             return false;
 
         var requestBody = new { refreshToken };
@@ -73,7 +74,7 @@ public class ApiService
         {
             var response = await client.PostAsJsonAsync($"{baseAddress}/api/Users/refresh", requestBody);
 
-            if (!response.IsSuccessStatusCode) 
+            if (!response.IsSuccessStatusCode)
                 return false;
 
             var wrappedResponse = await response.Content.ReadFromJsonAsync<ApiResponse<AuthResponse>>();
@@ -114,7 +115,7 @@ public class ApiService
         {
             bool refreshed = await RefreshTokenAsync();
 
-            if (refreshed) 
+            if (refreshed)
                 return await GetAsync<T>(url);
 
             _navManager.NavigateTo("/login");
@@ -146,7 +147,7 @@ public class ApiService
             if (!response.IsSuccessStatusCode && response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
                 bool refreshed = await RefreshTokenAsync();
-                if (refreshed) 
+                if (refreshed)
                     return await PostAsync<T>(url, body);
 
                 _navManager.NavigateTo("/login");
@@ -158,6 +159,84 @@ public class ApiService
         catch (Exception ex)
         {
             Console.WriteLine($"POST exception: {ex.Message}");
+            return default;
+        }
+    }
+
+    // ------------------- PATCH API Call -------------------
+    public async Task<T?> PatchAsync<T>(string url, object data)
+    {
+        var token = await _tokenManager.GetAccessTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            _navManager.NavigateTo("/login");
+            return default;
+        }
+
+        var client = _httpClientFactory.CreateClient("Api");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            // تحويل البيانات إلى JSON Patch format
+            var patchDocument = new List<object>();
+
+            var type = data.GetType();
+            var properties = type.GetProperties();
+
+            foreach (var prop in properties)
+            {
+                var value = prop.GetValue(data);
+                patchDocument.Add(new
+                {
+                    op = "replace",
+                    path = "/" + prop.Name,
+                    value = value
+                });
+            }
+
+            var jsonContent = new StringContent(
+                JsonSerializer.Serialize(patchDocument),
+                Encoding.UTF8,
+                "application/json-patch+json");
+
+            var request = new HttpRequestMessage(HttpMethod.Patch, url)
+            {
+                Content = jsonContent
+            };
+
+            var response = await client.SendAsync(request);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                bool refreshed = await RefreshTokenAsync();
+                if (refreshed)
+                    return await PatchAsync<T>(url, data);
+
+                _navManager.NavigateTo("/login");
+                return default;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"PATCH Error ({response.StatusCode}): {errorContent}");
+                return default;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(content))
+                return default;
+
+            return JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"PATCH exception: {ex.Message}");
             return default;
         }
     }
@@ -191,7 +270,7 @@ public class ApiService
         return result != null;
     }
 
-    public async Task<bool> ResetPasswordAsync(string email,string otp, string newPassword)
+    public async Task<bool> ResetPasswordAsync(string email, string otp, string newPassword)
     {
         var request = new
         {
@@ -252,6 +331,8 @@ public class ApiService
     {
         [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
         [JsonPropertyName("data")] public T Data { get; set; } = default!;
+        [JsonPropertyName("message")] public string Message { get; set; } = string.Empty;
+        [JsonPropertyName("success")] public bool Success { get; set; }
     }
 
     public class AuthResponse

@@ -1,13 +1,17 @@
-﻿@inherits LayoutComponentBase
+﻿@using AdminDashboard.Services
+@inherits LayoutComponentBase
 @inject TokenManagerService TokenManager
 @inject NavigationManager NavManager
 @inject IJSRuntime JS
+@inject ISnackbar Snackbar
+@inject ApiService ApiService
+@inject LocalizationService Localization
 
 <MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode" />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
-<MudLayout>
+<MudLayout dir="@Localization.Direction">
     <!-- ✅ Responsive AppBar -->
     <MudAppBar Elevation="1" Dense="@_isMobile" Color="Color.Primary" Class="px-2 px-md-4">
         <MudIconButton Icon="@Icons.Material.Filled.Menu"
@@ -15,51 +19,80 @@
                        Edge="Edge.Start"
                        OnClick="ToggleDrawer" />
 
-        <MudText Typo="@(_isMobile? Typo.body1: Typo.h6)" Class="ml-2 font-weight-bold text-white">
-            @(_isMobile ? "AlaMashi" : "AlaMashi Dashboard")
+        <MudText Typo="@(_isMobile? Typo.body1: Typo.h6)" Class="@($"{(_isRtl ? "mr-2" : "ml-2")} font-weight-bold text-white")">
+            @(_isMobile? Localization.Get("app.title") : Localization.Get("app.dashboard"))
         </MudText>
 
         <MudSpacer />
 
+        <!-- 🌍 Language Switcher -->
+        <MudTooltip Text="@Localization.Get("lang.toggle")">
+            <MudIconButton Icon="@Icons.Material.Filled.Translate"
+                           OnClick="ToggleLanguage"
+                           Color="Color.Inherit"
+                           Size="Size.Medium" />
+        </MudTooltip>
+
         <!-- 🌗 Dark/Light Mode Switch -->
-        <MudIconButton Icon="@(_isDarkMode? Icons.Material.Filled.DarkMode : Icons.Material.Filled.WbSunny)"
-                       OnClick="ToggleTheme"
-                       Color="Color.Inherit"
-                       Size="Size.Medium"
-                       Title="Toggle Dark/Light Mode" />
+        <MudTooltip Text="@Localization.Get("theme.toggle")">
+            <MudIconButton Icon="@(_isDarkMode? Icons.Material.Filled.DarkMode : Icons.Material.Filled.WbSunny)"
+                           OnClick="ToggleTheme"
+                           Color="Color.Inherit"
+                           Size="Size.Medium" />
+        </MudTooltip>
 
         <!-- 👤 User Info - Desktop Only -->
         @if (!_isMobile)
         {
-            <div class="d-flex align-center user-info ml-3">
-                <MudText Typo="Typo.body1" Class="text-white font-weight-bold mr-2">@_userName</MudText>
-                <MudAvatar Color="Color.Transparent" Size="Size.Medium">
-                    <MudIcon Icon="@Icons.Material.Filled.Person" Style="font-size:28px;" />
-                </MudAvatar>
+            <div class="d-flex align-center user-info mx-3">
+                <MudText Typo="Typo.body1" Class="text-white font-weight-bold mx-2">@_userName</MudText>
             </div>
         }
 
-        <!-- 👤 User Menu -->
-        <MudMenu Icon="@Icons.Material.Filled.MoreVert"
-                 Color="Color.Inherit"
-                 Dense="true"
-                 AnchorOrigin="Origin.BottomRight"
-                 TransformOrigin="Origin.TopRight">
-            <MudMenuItem Disabled="true">
-                <div class="d-flex align-center">
-                    <MudAvatar Size="Size.Small" Class="mr-2">
-                        <MudIcon Icon="@Icons.Material.Filled.Person" />
-                    </MudAvatar>
-                    <MudText Typo="Typo.body2">@_userName</MudText>
+        <!-- 👤 User Profile Menu -->
+        <MudMenu AnchorOrigin="Origin.BottomRight"
+                 TransformOrigin="Origin.TopRight"
+                 Dense="true">
+            <ActivatorContent>
+                <MudIconButton Icon="@Icons.Material.Filled.AccountCircle"
+                               Color="Color.Inherit"
+                               Size="Size.Large" />
+            </ActivatorContent>
+            <ChildContent>
+                <!-- User Profile Card -->
+                <div class="profile-menu-card pa-4" style="width: 320px; background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); border-radius: 12px; margin: 8px;">
+                    <div class="d-flex align-center mb-3">
+                        <MudAvatar Size="Size.Large"
+                                   Color="Color.Surface"
+                                   Class="@(_isRtl ? "ml-3" : "mr-3")"
+                                   Style="font-size: 1.5rem; font-weight: bold; color: #16a34a;">
+                            @_userName?.FirstOrDefault().ToString().ToUpper()
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.body1" Class="font-weight-bold text-white">@_userName</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Surface" Style="opacity: 0.9;">@_userEmail</MudText>
+                        </div>
+                    </div>
                 </div>
-            </MudMenuItem>
-            <MudDivider />
-            <MudMenuItem Icon="@Icons.Material.Filled.Settings">
-                Profile Settings
-            </MudMenuItem>
-            <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="LogoutUser">
-                Logout
-            </MudMenuItem>
+
+                <MudDivider />
+
+                <!-- Menu Items -->
+                <MudMenuItem Icon="@Icons.Material.Filled.Settings"
+                             OnClick="@(() => NavigateToProfile())">
+                    <MudIcon Icon="@Icons.Material.Filled.Settings" Class="@(_isRtl ? "ml-2" : "mr-2")" />
+                    @Localization.Get("user.settings")
+                </MudMenuItem>
+
+                <MudDivider />
+
+                <MudMenuItem Icon="@Icons.Material.Filled.Logout"
+                             OnClick="LogoutUser"
+                             Class="logout-item">
+                    <MudIcon Icon="@Icons.Material.Filled.Logout" Class="@(_isRtl ? "ml-2" : "mr-2")" />
+                    @Localization.Get("user.logout")
+                </MudMenuItem>
+            </ChildContent>
         </MudMenu>
     </MudAppBar>
 
@@ -69,6 +102,7 @@
                Variant="@_drawerVariant"
                Breakpoint="Breakpoint.Md"
                ClipMode="DrawerClipMode.Always"
+               Anchor="@(_isRtl ? Anchor.Right : Anchor.Start)"
                Class="custom-drawer">
 
         <MudDrawerHeader Class="d-flex justify-center align-center pa-4">
@@ -83,45 +117,55 @@
             <MudNavLink Href="/"
                         Icon="@Icons.Material.Filled.Dashboard"
                         Match="NavLinkMatch.All">
-                Dashboard
+                @Localization.Get("menu.dashboard")
             </MudNavLink>
+
             <MudNavLink Href="/users"
                         Icon="@Icons.Material.Filled.People">
-                Users
+                @Localization.Get("menu.users")
             </MudNavLink>
+
             <MudNavLink Href="/categories"
                         Icon="@Icons.Material.Filled.Category">
-                Categories
+                @Localization.Get("menu.categories")
             </MudNavLink>
+
             <MudNavLink Href="/products"
                         Icon="@Icons.Material.Filled.Inventory">
-                Products
+                @Localization.Get("menu.products")
             </MudNavLink>
+
             <MudNavLink Href="/offers"
                         Icon="@Icons.Material.Filled.LocalOffer">
-                Offers
+                @Localization.Get("menu.offers")
             </MudNavLink>
+
             <MudNavLink Href="/addresses"
                         Icon="@Icons.Material.Filled.LocationOn">
-                Addresses
+                @Localization.Get("menu.addresses")
             </MudNavLink>
 
             <MudDivider Class="my-2" />
 
-            <!-- ✨ NEW: Orders Section -->
             <MudNavLink Href="/orders"
                         Icon="@Icons.Material.Filled.ShoppingCart">
-                Orders
+                @Localization.Get("menu.orders")
             </MudNavLink>
 
-            <!-- ✨ NEW: Payments Section -->
             <MudNavLink Href="/payments"
                         Icon="@Icons.Material.Filled.Payment">
-                Payments
+                @Localization.Get("menu.payments")
+            </MudNavLink>
+
+            <MudDivider Class="my-2" />
+
+            <MudNavLink Href="/profile"
+                        Icon="@Icons.Material.Filled.AccountCircle"
+                        IconColor="Color.Info">
+                @Localization.Get("menu.profile")
             </MudNavLink>
         </MudNavMenu>
 
-        <!-- Footer في الـ Drawer -->
         @if (_drawerOpen && !_isMobile)
         {
             <MudSpacer />
@@ -141,11 +185,62 @@
     </MudMainContent>
 </MudLayout>
 
+<style>
+    .user-info {
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+        .user-info:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+    .profile-menu-card {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .logo-img {
+        transition: all 0.3s ease;
+    }
+
+    .custom-drawer {
+        transition: all 0.3s ease;
+    }
+
+    .logout-item {
+        color: #dc2626 !important;
+    }
+
+    ::deep .profile-menu-card .mud-text {
+        color: white;
+    }
+
+    /* RTL Support */
+    [dir="rtl"] ::deep .mud-nav-link-icon {
+        margin-right: 0 !important;
+        margin-left: 12px !important;
+    }
+
+    [dir="rtl"] .custom-drawer {
+        border-left: 1px solid var(--mud-palette-divider);
+        border-right: none;
+    }
+
+    [dir="ltr"] .custom-drawer {
+        border-right: 1px solid var(--mud-palette-divider);
+        border-left: none;
+    }
+</style>
+
 @code {
     private bool _drawerOpen = true;
     private bool _isDarkMode = false;
     private bool _isMobile = false;
+    private bool _isRtl => Localization.IsArabic;
     private string _userName = "User";
+    private string _userEmail = "loading@example.com";
     private DrawerVariant _drawerVariant = DrawerVariant.Mini;
 
     private MudTheme _theme = new MudTheme()
@@ -180,6 +275,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Initialize Localization
+        await Localization.InitializeAsync();
+
+        Localization.OnLanguageChanged += async () =>
+        {
+            await InvokeAsync(StateHasChanged);
+        };
+
         TokenManager.OnUserNameChanged += async () =>
         {
             _userName = await TokenManager.GetUserNameAsync() ?? "User";
@@ -189,13 +292,53 @@
         var name = await TokenManager.GetUserNameAsync();
         if (!string.IsNullOrWhiteSpace(name))
             _userName = name;
+
+        // Load saved theme preference
+        try
+        {
+            var savedTheme = await JS.InvokeAsync<string>("localStorage.getItem", "app_theme");
+            if (!string.IsNullOrEmpty(savedTheme))
+            {
+                _isDarkMode = savedTheme == "dark";
+            }
+        }
+        catch { }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            // Apply saved language direction
+            await JS.InvokeVoidAsync("eval", $"document.documentElement.setAttribute('dir', '{Localization.Direction}')");
+            await JS.InvokeVoidAsync("eval", $"document.documentElement.setAttribute('lang', '{Localization.CurrentLanguage}')");
+            
             await CheckScreenSize();
+            await LoadUserData();
+        }
+    }
+
+    private async Task LoadUserData()
+    {
+        try
+        {
+            var userId = await TokenManager.GetUserIdAsync();
+            if (userId.HasValue)
+            {
+                var response = await ApiService.GetAsync<ApiService.ApiResponse<UserProfileDto>>(
+                    $"/api/Users/{userId}");
+
+                if (response?.Data != null)
+                {
+                    _userEmail = response.Data.Email;
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user data: {ex.Message}");
+            _userEmail = "user@alamashi.com";
         }
     }
 
@@ -243,14 +386,48 @@
         _drawerOpen = !_drawerOpen;
     }
 
-    private void ToggleTheme()
+    private async Task ToggleTheme()
     {
         _isDarkMode = !_isDarkMode;
+        
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "app_theme", _isDarkMode ? "dark" : "light");
+        }
+        catch { }
+    }
+
+    private async Task ToggleLanguage()
+    {
+        await Localization.ToggleLanguageAsync();
+        Snackbar.Add(
+            Localization.IsArabic ? "تم التبديل إلى العربية ✅" : "Switched to English ✅", 
+            Severity.Success
+        );
+    }
+
+    private void NavigateToProfile()
+    {
+        NavManager.NavigateTo("/profile");
+
+        if (_isMobile)
+        {
+            _drawerOpen = false;
+        }
     }
 
     private async Task LogoutUser()
     {
         await TokenManager.ClearTokensAsync();
         NavManager.NavigateTo("/login", forceLoad: true);
+    }
+
+    public class UserProfileDto
+    {
+        [JsonPropertyName("userId")] public int UserId { get; set; }
+        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
+        [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("phone")] public string Phone { get; set; } = string.Empty;
+        [JsonPropertyName("userRole")] public string UserRole { get; set; } = string.Empty;
     }
 }

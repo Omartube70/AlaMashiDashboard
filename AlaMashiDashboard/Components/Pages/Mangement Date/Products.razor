@@ -1,20 +1,25 @@
-﻿@page "/products"
+﻿@page "/Products"
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject LocalizationService Localization
+@using AlaMashi.AdminDashboard.Components.Dialogs
 
-<PageTitle>Product Management</PageTitle>
+<PageTitle>@Localization.Get("products.title")</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
-            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">🛍️ Product Management</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Add, edit, and manage all available products in the system</MudText>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">🛍️ @Localization.Get("products.title")</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("products.subtitle")</MudText>
         </div>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Add"
                    OnClick="OpenAddDialog"
                    Class="mt-2 mt-md-0 pulse-button">
-            Add Product
+            @Localization.Get("products.add")
         </MudButton>
     </div>
 </div>
@@ -25,7 +30,7 @@
         <MudCardContent>
             <div class="d-flex flex-column justify-center align-center pa-8">
                 <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading products...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">@Localization.Get("common.loading")</MudText>
             </div>
         </MudCardContent>
     </MudCard>
@@ -43,26 +48,26 @@ else if (productsList != null && productsList.Any())
 
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString"
-                                  Placeholder="Search products..."
+                                  Placeholder="@Localization.Get("common.search")"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   IconSize="Size.Medium"
                                   Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Class="mr-2"
+                                  Class="@(_isRtl ? "ml-2" : "mr-2")"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
-                    <MudTooltip Text="Refresh">
+                    <MudTooltip Text="@Localization.Get("common.refresh")">
                         <MudIconButton Icon="@Icons.Material.Filled.Refresh"
                                        OnClick="LoadDataAsync"
                                        Color="Color.Primary" />
                     </MudTooltip>
-                    <MudTooltip Text="Filter">
+                    <MudTooltip Text="@Localization.Get("common.filter")">
                         <MudIconButton Icon="@Icons.Material.Filled.FilterList"
                                        Color="Color.Secondary" />
                     </MudTooltip>
-                    <MudTooltip Text="Export">
+                    <MudTooltip Text="@Localization.Get("common.export")">
                         <MudIconButton Icon="@Icons.Material.Filled.FileDownload"
                                        Color="Color.Info" />
                     </MudTooltip>
@@ -71,42 +76,42 @@ else if (productsList != null && productsList.Any())
                 <HeaderContent>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<ProductDto, object>(x => x.ProductID)">
-                            ID
+                            @Localization.Get("products.id")
                         </MudTableSortLabel>
                     </MudTh>
-                    <MudTh>Product</MudTh>
+                    <MudTh>@Localization.Get("products.name")</MudTh>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<ProductDto, object>(x => x.Price)">
-                            Price
+                            @Localization.Get("products.price")
                         </MudTableSortLabel>
                     </MudTh>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<ProductDto, object>(x => x.QuantityInStock)">
-                            Stock
+                            @Localization.Get("products.stock")
                         </MudTableSortLabel>
                     </MudTh>
-                    <MudTh>Category</MudTh>
-                    <MudTh Style="text-align: right;">Actions</MudTh>
+                    <MudTh>@Localization.Get("products.category")</MudTh>
+                    <MudTh Style="text-align: right;">@Localization.Get("common.actions")</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
-                    <MudTd DataLabel="ID">
+                    <MudTd DataLabel="@Localization.Get("products.id")">
                         <MudChip Size="Size.Small" Color="Color.Default">@context.ProductID</MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Product">
+                    <MudTd DataLabel="@Localization.Get("products.name")">
                         <div class="d-flex align-center">
                             @if (!string.IsNullOrEmpty(context.MainImageURL))
                             {
                                 <MudAvatar Image="@context.MainImageURL"
                                            Size="Size.Medium"
-                                           Class="mr-3"
+                                           Class="@(_isRtl ? "ml-3" : "mr-3")"
                                            Style="border-radius: 8px;" />
                             }
                             else
                             {
                                 <MudAvatar Color="Color.Secondary"
                                            Size="Size.Medium"
-                                           Class="mr-3"
+                                           Class="@(_isRtl ? "ml-3" : "mr-3")"
                                            Style="border-radius: 8px;">
                                     <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" />
                                 </MudAvatar>
@@ -122,7 +127,7 @@ else if (productsList != null && productsList.Any())
                             </div>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Price">
+                    <MudTd DataLabel="@Localization.Get("products.price")">
                         <MudChip Size="Size.Small"
                                  Color="Color.Success"
                                  Icon="@Icons.Material.Filled.AttachMoney"
@@ -130,7 +135,7 @@ else if (productsList != null && productsList.Any())
                             @context.Price.ToString("N2")
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Stock">
+                    <MudTd DataLabel="@Localization.Get("products.stock")">
                         @if (context.QuantityInStock > 50)
                         {
                             <MudChip Size="Size.Small"
@@ -156,27 +161,27 @@ else if (productsList != null && productsList.Any())
                             </MudChip>
                         }
                     </MudTd>
-                    <MudTd DataLabel="Category">
+                    <MudTd DataLabel="@Localization.Get("products.category")">
                         <MudChip Size="Size.Small"
                                  Color="Color.Info"
                                  Icon="@Icons.Material.Filled.Category">
                             @context.CategoryName
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Actions" Style="text-align: right;">
-                        <MudTooltip Text="View Details">
+                    <MudTd DataLabel="@Localization.Get("common.actions")" Style="text-align: right;">
+                        <MudTooltip Text="@Localization.Get("common.view")">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
                                            Size="Size.Small"
                                            Color="Color.Default"
                                            OnClick="@(() => ViewProduct(context))" />
                         </MudTooltip>
-                        <MudTooltip Text="Edit">
+                        <MudTooltip Text="@Localization.Get("common.edit")">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Size="Size.Small"
                                            Color="Color.Info"
                                            OnClick="@(() => OpenEditDialog(context))" />
                         </MudTooltip>
-                        <MudTooltip Text="Delete">
+                        <MudTooltip Text="@Localization.Get("common.delete")">
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                            Size="Size.Small"
                                            Color="Color.Error"
@@ -196,20 +201,20 @@ else if (productsList != null && productsList.Any())
     <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
         <div class="d-flex justify-space-between align-center flex-wrap gap-2">
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="mr-1" />
-                Total Products: <strong>@productsList.Count</strong>
+                <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("products.total"): <strong>@productsList.Count</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Success">
-                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
-                In Stock: <strong>@productsList.Count(p => p.QuantityInStock > 0)</strong>
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("products.in_stock"): <strong>@productsList.Count(p => p.QuantityInStock > 0)</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Error">
-                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Class="mr-1" />
-                Low Stock: <strong>@productsList.Count(p => p.QuantityInStock > 0 && p.QuantityInStock <= 10)</strong>
+                <MudIcon Icon="@Icons.Material.Filled.Warning" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("products.low_stock"): <strong>@productsList.Count(p => p.QuantityInStock > 0 && p.QuantityInStock <= 10)</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Default">
-                <MudIcon Icon="@Icons.Material.Filled.RemoveCircle" Size="Size.Small" Class="mr-1" />
-                Out of Stock: <strong>@productsList.Count(p => p.QuantityInStock == 0)</strong>
+                <MudIcon Icon="@Icons.Material.Filled.RemoveCircle" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("products.out_stock"): <strong>@productsList.Count(p => p.QuantityInStock == 0)</strong>
             </MudText>
         </div>
     </MudPaper>
@@ -224,22 +229,22 @@ else
                          Color="Color.Secondary"
                          Class="mb-4 pulse-icon"
                          Style="font-size: 5rem;" />
-                <MudText Typo="Typo.h6" Class="mb-2">No Products Available</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">@Localization.Get("products.empty")</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Start by adding your first product to the inventory.
+                    @Localization.Get("products.empty_msg")
                 </MudText>
                 <div class="d-flex gap-2">
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                OnClick="OpenAddDialog"
                                StartIcon="@Icons.Material.Filled.Add">
-                        Add Product
+                        @Localization.Get("products.add")
                     </MudButton>
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Secondary"
                                OnClick="LoadDataAsync"
                                StartIcon="@Icons.Material.Filled.Refresh">
-                        Retry
+                        @Localization.Get("common.retry")
                     </MudButton>
                 </div>
             </div>
@@ -342,8 +347,14 @@ else
 
 @code {
     private bool isLoading = true;
+    private bool _isRtl => Localization.IsArabic;
     private List<ProductDto>? productsList;
     private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += async () => await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -357,11 +368,20 @@ else
         isLoading = true;
         StateHasChanged();
 
-        var products = await ApiService.GetAsync<ApiService.ApiResponse<List<ProductDto>>>("/api/Products/all");
-        productsList = products?.Data;
-
-        isLoading = false;
-        StateHasChanged();
+        try
+        {
+            var products = await ApiService.GetAsync<ApiService.ApiResponse<List<ProductDto>>>("/api/Products/all");
+            productsList = products?.Data;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
     private IEnumerable<ProductDto> GetFilteredProducts()
@@ -377,10 +397,68 @@ else
         );
     }
 
-    private void OpenAddDialog() { }
-    private void OpenEditDialog(ProductDto product) { }
-    private void ViewProduct(ProductDto product) { }
-    private async Task DeleteProduct(ProductDto product) { }
+    private async Task OpenAddDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddProductDialog>(
+            Localization.Get("products.add"),
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = false
+            });
+
+        var result = await dialog.Result;
+        if (!result.Canceled) await LoadDataAsync();
+    }
+
+    private void OpenEditDialog(ProductDto product)
+    {
+        Snackbar.Add(Localization.IsArabic
+            ? $"ميزة التعديل لـ {product.ProductName} - قريباً"
+            : $"Edit feature for {product.ProductName} - Coming soon", Severity.Info);
+    }
+
+    private void ViewProduct(ProductDto product)
+    {
+        Snackbar.Add(Localization.IsArabic
+            ? $"عرض: {product.ProductName}"
+            : $"Viewing: {product.ProductName}", Severity.Info);
+    }
+
+    private async Task DeleteProduct(ProductDto product)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            Localization.Get("common.delete"),
+            Localization.IsArabic
+                ? $"هل أنت متأكد من حذف '{product.ProductName}'؟ لا يمكن التراجع عن هذا الإجراء."
+                : $"Are you sure you want to delete '{product.ProductName}'? This action cannot be undone.",
+            yesText: Localization.Get("common.delete"),
+            cancelText: Localization.Get("common.cancel"));
+
+        if (confirmed != true) return;
+
+        try
+        {
+            var deleted = await ApiService.DeleteAsync($"/api/Products/{product.ProductID}");
+            if (deleted)
+            {
+                Snackbar.Add(Localization.IsArabic
+                    ? $"تم حذف المنتج '{product.ProductName}' بنجاح!"
+                    : $"Product '{product.ProductName}' deleted successfully!", Severity.Success);
+                await LoadDataAsync();
+            }
+            else
+            {
+                Snackbar.Add(Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+    }
 
     public class ProductDto
     {

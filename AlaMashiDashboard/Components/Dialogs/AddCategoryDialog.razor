@@ -1,0 +1,164 @@
+﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="categoryForm.CategoryName"
+                          Label="Category Name"
+                          Variant="Variant.Outlined"
+                          Placeholder="e.g., Electronics"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateName))" />
+
+            <MudTextField @bind-Value="categoryForm.IconName"
+                          Label="Icon Name"
+                          Variant="Variant.Outlined"
+                          HelperText="Material Design icon name (e.g., Devices, LocalOffer)"
+                          Placeholder="e.g., Devices" />
+
+            <MudSelect @bind-Value="categoryForm.ParentId"
+                       Label="Parent Category (Optional)"
+                       Variant="Variant.Outlined"
+                       AnchorOrigin="Origin.BottomCenter">
+                <MudSelectItem Value="@((int?)null)">No Parent (Root Category)</MudSelectItem>
+                @if (parentCategories != null && parentCategories.Any())
+                {
+                    @foreach (var category in parentCategories)
+                    {
+                        <MudSelectItem Value="@(category.CategoryId)">@category.CategoryName</MudSelectItem>
+                    }
+                }
+            </MudSelect>
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>@error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Outlined">Cancel</MudButton>
+        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting">
+            @(isSubmitting ? "Creating..." : "Create Category")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    private CreateCategoryForm categoryForm = new();
+    private List<CategoryOption> parentCategories = new();
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadParentCategories();
+    }
+
+    private async Task LoadParentCategories()
+    {
+        try
+        {
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<List<CategoryOption>>>(
+                "/api/Categories/flat");
+
+            parentCategories = response?.Data ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading categories: {ex.Message}", Severity.Error);
+        }
+    }
+
+    public class CreateCategoryForm
+    {
+        public string CategoryName { get; set; } = string.Empty;
+        public string IconName { get; set; } = string.Empty;
+        public int? ParentId { get; set; }
+    }
+
+    public class CategoryOption
+    {
+        [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("iconName")] public string IconName { get; set; } = string.Empty;
+    }
+
+    private IEnumerable<string> ValidateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            yield return "Category name is required";
+        else if (name.Length < 2)
+            yield return "Category name must be at least 2 characters";
+        else if (name.Length > 50)
+            yield return "Category name must not exceed 50 characters";
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidateName(categoryForm.CategoryName));
+    }
+
+    private async Task Submit()
+    {
+        ValidateForm();
+
+        if (validationErrors.Any())
+            return;
+
+        isSubmitting = true;
+
+        try
+        {
+            var createRequest = new CreateCategoryRequest
+            {
+                CategoryName = categoryForm.CategoryName,
+                IconName = categoryForm.IconName,
+                ParentId = categoryForm.ParentId
+            };
+
+            var response = await ApiService.PostAsync<ApiService.ApiResponse<object>>(
+                "/api/Categories/Create", createRequest);
+
+            if (response?.Success == true)
+            {
+                Snackbar.Add("Category created successfully!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(response?.Message ?? "Failed to create category", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error creating category: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    public class CreateCategoryRequest
+    {
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("iconName")] public string IconName { get; set; } = string.Empty;
+        [JsonPropertyName("parentId")] public int? ParentId { get; set; }
+    }
+}

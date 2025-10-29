@@ -110,8 +110,7 @@ else if (paymentsList != null && paymentsList.Any())
 
                 <HeaderContent>
                     <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.PaymentId)">Payment ID</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.OrderId)">Order ID</MudTableSortLabel></MudTh>
-                    <MudTh>Customer</MudTh>
+                    <MudTh>Transaction ID</MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.Amount)">Amount</MudTableSortLabel></MudTh>
                     <MudTh>Payment Method</MudTh>
                     <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.PaymentDate)">Date</MudTableSortLabel></MudTh>
@@ -122,15 +121,10 @@ else if (paymentsList != null && paymentsList.Any())
                     <MudTd DataLabel="Payment ID">
                         <MudChip Size="Size.Small" Color="Color.Primary">#@context.PaymentId</MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Order ID">
-                        <MudChip Size="Size.Small" Color="Color.Secondary">#@context.OrderId</MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="Customer">
+                    <MudTd DataLabel="Transaction ID">
                         <div class="d-flex align-center">
-                            <MudAvatar Size="Size.Small" Color="Color.Info" Class="mr-2">
-                                @context.CustomerName?.Substring(0, 1).ToUpper()
-                            </MudAvatar>
-                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.CustomerName</MudText>
+                            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" Color="Color.Secondary" Class="mr-1" />
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.TransactionId</MudText>
                         </div>
                     </MudTd>
                     <MudTd DataLabel="Amount">
@@ -140,7 +134,7 @@ else if (paymentsList != null && paymentsList.Any())
                     </MudTd>
                     <MudTd DataLabel="Payment Method">
                         <MudChip Size="Size.Small" Color="Color.Info" Icon="@GetPaymentMethodIcon(context.PaymentMethod)">
-                            @context.PaymentMethod
+                            @FormatPaymentMethod(context.PaymentMethod)
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="Date">
@@ -149,9 +143,9 @@ else if (paymentsList != null && paymentsList.Any())
                     </MudTd>
                     <MudTd DataLabel="Status">
                         <MudChip Size="Size.Small"
-                                 Color="@GetStatusColor(context.Status)"
-                                 Icon="@GetStatusIcon(context.Status)">
-                            @context.Status
+                                 Color="@GetStatusColor(context.PaymentStatus)"
+                                 Icon="@GetStatusIcon(context.PaymentStatus)">
+                            @context.PaymentStatus
                         </MudChip>
                     </MudTd>
                 </RowTemplate>
@@ -326,50 +320,8 @@ else
 
         try
         {
-            // Get all orders
-            var ordersResponse = await ApiService.GetAsync<ApiService.ApiResponse<List<OrderDto>>>("/api/Orders/all");
-
-            if (ordersResponse?.Data != null && ordersResponse.Data.Any())
-            {
-                // For each order, get full details to access payments
-                var allPayments = new List<PaymentDto>();
-
-                foreach (var order in ordersResponse.Data)
-                {
-                    try
-                    {
-                        var orderDetailResponse = await ApiService.GetAsync<ApiService.ApiResponse<OrderDetailsDto>>($"/api/Orders/{order.OrderId}");
-
-                        if (orderDetailResponse?.Data?.Payments != null && orderDetailResponse.Data.Payments.Any())
-                        {
-                            foreach (var payment in orderDetailResponse.Data.Payments)
-                            {
-                                allPayments.Add(new PaymentDto
-                                {
-                                    PaymentId = payment.PaymentId,
-                                    OrderId = orderDetailResponse.Data.OrderId,
-                                    CustomerName = orderDetailResponse.Data.UserName,
-                                    Amount = payment.Amount,
-                                    PaymentMethod = payment.PaymentMethod,
-                                    Status = payment.Status,
-                                    PaymentDate = payment.PaymentDate
-                                });
-                            }
-                        }
-                    }
-                    catch
-                    {
-                        // Skip orders that fail to load details
-                        continue;
-                    }
-                }
-
-                paymentsList = allPayments;
-            }
-            else
-            {
-                paymentsList = new List<PaymentDto>();
-            }
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<List<PaymentDto>>>("/api/Orders/payments/all");
+            paymentsList = response?.Data;
         }
         catch (Exception ex)
         {
@@ -390,24 +342,23 @@ else
         var filtered = paymentsList.AsEnumerable();
 
         if (_statusFilter != null)
-            filtered = filtered.Where(p => p.Status == _statusFilter);
+            filtered = filtered.Where(p => p.PaymentStatus == _statusFilter);
 
         if (!string.IsNullOrWhiteSpace(_searchString))
             filtered = filtered.Where(p =>
                 p.PaymentId.ToString().Contains(_searchString) ||
-                p.OrderId.ToString().Contains(_searchString) ||
-                p.CustomerName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                p.TransactionId.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
                 p.PaymentMethod.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-                p.Status.Contains(_searchString, StringComparison.OrdinalIgnoreCase));
+                p.PaymentStatus.Contains(_searchString, StringComparison.OrdinalIgnoreCase));
 
         return filtered;
     }
 
     private void FilterByStatus(string? status) => _statusFilter = status;
 
-    private int GetStatusCount(string status) => paymentsList?.Count(p => p.Status == status) ?? 0;
+    private int GetStatusCount(string status) => paymentsList?.Count(p => p.PaymentStatus == status) ?? 0;
 
-    private decimal GetTotalRevenue() => paymentsList?.Where(p => p.Status == "Completed").Sum(p => p.Amount) ?? 0;
+    private decimal GetTotalRevenue() => paymentsList?.Where(p => p.PaymentStatus == "Completed").Sum(p => p.Amount) ?? 0;
 
     private Color GetStatusColor(string status) => status switch
     {
@@ -430,10 +381,17 @@ else
     private string GetPaymentMethodIcon(string method) => method.ToLower() switch
     {
         "cash" => Icons.Material.Filled.Money,
-        "credit card" or "card" => Icons.Material.Filled.CreditCard,
-        "debit card" => Icons.Material.Filled.CreditCard,
+        "creditcard" or "credit card" or "card" => Icons.Material.Filled.CreditCard,
+        "debitcard" or "debit card" => Icons.Material.Filled.CreditCard,
         "wallet" => Icons.Material.Filled.AccountBalanceWallet,
         _ => Icons.Material.Filled.Payment
+    };
+
+    private string FormatPaymentMethod(string method) => method switch
+    {
+        "CreditCard" => "Credit Card",
+        "DebitCard" => "Debit Card",
+        _ => method
     };
 
     private async Task ExportToCSV()
@@ -442,11 +400,11 @@ else
 
         var filtered = GetFilteredPayments().ToList();
         var csv = new System.Text.StringBuilder();
-        csv.AppendLine("Payment ID,Order ID,Customer,Amount,Payment Method,Status,Date");
+        csv.AppendLine("Payment ID,Transaction ID,Amount,Payment Method,Status,Date");
 
         foreach (var payment in filtered)
         {
-            csv.AppendLine($"{payment.PaymentId},{payment.OrderId},{payment.CustomerName},{payment.Amount},{payment.PaymentMethod},{payment.Status},{payment.PaymentDate:yyyy-MM-dd HH:mm}");
+            csv.AppendLine($"{payment.PaymentId},{payment.TransactionId},{payment.Amount},{FormatPaymentMethod(payment.PaymentMethod)},{payment.PaymentStatus},{payment.PaymentDate:yyyy-MM-dd HH:mm}");
         }
 
         var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
@@ -458,33 +416,11 @@ else
 
     public class PaymentDto
     {
-        public int PaymentId { get; set; }
-        public int OrderId { get; set; }
-        public string CustomerName { get; set; } = string.Empty;
-        public decimal Amount { get; set; }
-        public string PaymentMethod { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public DateTime PaymentDate { get; set; }
-    }
-
-    public class OrderDto
-    {
-        [JsonPropertyName("orderId")] public int OrderId { get; set; }
-    }
-
-    public class OrderDetailsDto
-    {
-        [JsonPropertyName("orderId")] public int OrderId { get; set; }
-        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
-        [JsonPropertyName("payments")] public List<PaymentItemDto>? Payments { get; set; }
-    }
-
-    public class PaymentItemDto
-    {
         [JsonPropertyName("paymentId")] public int PaymentId { get; set; }
         [JsonPropertyName("amount")] public decimal Amount { get; set; }
-        [JsonPropertyName("paymentMethod")] public string PaymentMethod { get; set; } = string.Empty;
-        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
         [JsonPropertyName("paymentDate")] public DateTime PaymentDate { get; set; }
+        [JsonPropertyName("paymentMethod")] public string PaymentMethod { get; set; } = string.Empty;
+        [JsonPropertyName("paymentStatus")] public string PaymentStatus { get; set; } = string.Empty;
+        [JsonPropertyName("transactionId")] public string TransactionId { get; set; } = string.Empty;
     }
 }

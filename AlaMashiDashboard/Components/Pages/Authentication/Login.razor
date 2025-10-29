@@ -1,19 +1,40 @@
 ﻿@page "/login"
 @using System.Text.RegularExpressions
+@using AdminDashboard.Services
+@inject LocalizationService Localization
+@inject IJSRuntime JS
 
-<PageTitle>Login - Ala Mashi Dashboard</PageTitle>
+<PageTitle>@Localization.Get("login.title") - @Localization.Get("app.title")</PageTitle>
 
-<div class="login-wrapper">
+<div class="login-wrapper" data-theme="@(_isDarkMode ? "dark" : "light")" dir="@Localization.Direction">
     <MudContainer MaxWidth="MaxWidth.Small" Class="login-container">
+
+        <!-- Language & Theme Toggle Floating Button -->
+        <div class="floating-controls">
+            <MudTooltip Text="@Localization.Get("lang.toggle")">
+                <MudIconButton Icon="@Icons.Material.Filled.Translate"
+                               OnClick="ToggleLanguage"
+                               Color="Color.Surface"
+                               Size="Size.Large"
+                               Class="control-btn" />
+            </MudTooltip>
+            <MudTooltip Text="@Localization.Get("theme.toggle")">
+                <MudIconButton Icon="@(_isDarkMode? Icons.Material.Filled.DarkMode : Icons.Material.Filled.WbSunny)"
+                               OnClick="ToggleTheme"
+                               Color="Color.Surface"
+                               Size="Size.Large"
+                               Class="control-btn" />
+            </MudTooltip>
+        </div>
 
         <!-- Logo & Header Section -->
         <div class="login-header fade-in">
             <div class="logo-circle pulse-icon">
                 <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Large" Color="Color.Surface" />
             </div>
-            <MudText Typo="Typo.h4" Class="login-title mt-3">Welcome Back</MudText>
+            <MudText Typo="Typo.h4" Class="login-title mt-3">@Localization.Get("login.title")</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary" Class="login-subtitle">
-                Sign in to access the admin dashboard
+                @Localization.Get("login.subtitle")
             </MudText>
         </div>
 
@@ -25,13 +46,13 @@
                     <!-- Email Field -->
                     <div class="mb-4">
                         <MudTextField @bind-Value="_email"
-                                      Label="Email Address"
+                                      Label="@Localization.Get("login.email")"
                                       Variant="Variant.Outlined"
                                       FullWidth="true"
                                       For="@(() => _email)"
                                       Immediate="true"
                                       Required="true"
-                                      RequiredError="Email is required"
+                                      RequiredError="@Localization.Get("login.email")"
                                       Validation="@(InputValidator.ValidateEmail)"
                                       Adornment="Adornment.Start"
                                       AdornmentIcon="@Icons.Material.Filled.Email"
@@ -42,14 +63,14 @@
                     <!-- Password Field -->
                     <div class="mb-3">
                         <MudTextField @bind-Value="_password"
-                                      Label="Password"
+                                      Label="@Localization.Get("login.password")"
                                       Variant="Variant.Outlined"
                                       InputType="@_passwordInputType"
                                       FullWidth="true"
                                       For="@(() => _password)"
                                       Immediate="true"
                                       Required="true"
-                                      RequiredError="Password is required"
+                                      RequiredError="@Localization.Get("login.password")"
                                       Validation="@(InputValidator.ValidatePassword)"
                                       Adornment="Adornment.End"
                                       AdornmentIcon="@_passwordIcon"
@@ -83,12 +104,12 @@
                                Disabled="@_isLoggingIn">
                         @if (_isLoggingIn)
                         {
-                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                            <span>Signing In...</span>
+                            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="@(_isRtl ? "ml-2" : "mr-2")" />
+                            <span>@Localization.Get("login.signing_in")</span>
                         }
                         else
                         {
-                            <span>Sign In</span>
+                            <span>@Localization.Get("login.signin")</span>
                         }
                     </MudButton>
 
@@ -98,8 +119,8 @@
                                  Typo="Typo.body2"
                                  Color="Color.Primary"
                                  Class="forgot-link">
-                            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Class="mr-1" />
-                            Forgot your password?
+                            <MudIcon Icon="@Icons.Material.Filled.Lock" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                            @Localization.Get("login.forgot_password")
                         </MudLink>
                     </div>
 
@@ -110,7 +131,7 @@
         <!-- Footer -->
         <div class="login-footer mt-4 text-center fade-in">
             <MudText Typo="Typo.caption" Color="Color.Secondary">
-                © 2025 Ala Mashi Dashboard. All rights reserved.
+                @Localization.Get("login.footer")
             </MudText>
         </div>
 
@@ -123,14 +144,53 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         padding: 2rem 1rem;
+        transition: background 0.3s ease;
     }
+
+        /* Light Mode */
+        .login-wrapper[data-theme="light"] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Dark Mode */
+        .login-wrapper[data-theme="dark"] {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
 
     .login-container {
         width: 100%;
         max-width: 480px;
     }
+
+    .floating-controls {
+        position: fixed;
+        top: 1.5rem;
+        display: flex;
+        gap: 0.5rem;
+        z-index: 1000;
+        animation: slideDown 0.5s ease-out;
+    }
+
+    [dir="ltr"] .floating-controls {
+        right: 1.5rem;
+    }
+
+    [dir="rtl"] .floating-controls {
+        left: 1.5rem;
+    }
+
+    .control-btn {
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+    }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
 
     .login-header {
         text-align: center;
@@ -149,6 +209,10 @@
         box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
     }
 
+    [data-theme="dark"] .logo-circle {
+        background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+    }
+
     .login-title {
         color: white;
         font-weight: 700;
@@ -165,6 +229,10 @@
         background: white;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         overflow: hidden;
+    }
+
+    [data-theme="dark"] .login-card {
+        background: #1e293b;
     }
 
     .modern-input {
@@ -202,10 +270,15 @@
         transition: all 0.2s ease;
     }
 
-        .forgot-link:hover {
-            text-decoration: underline;
-            transform: translateX(2px);
-        }
+    [dir="ltr"] .forgot-link:hover {
+        text-decoration: underline;
+        transform: translateX(2px);
+    }
+
+    [dir="rtl"] .forgot-link:hover {
+        text-decoration: underline;
+        transform: translateX(-2px);
+    }
 
     .login-footer {
         color: rgba(255, 255, 255, 0.8);
@@ -245,6 +318,18 @@
         }
     }
 
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     @@keyframes pulse {
         0%, 100% {
             transform: scale(1);
@@ -258,6 +343,18 @@
     @@media (max-width: 600px) {
         .login-wrapper {
             padding: 1rem;
+        }
+
+        .floating-controls {
+            top: 1rem;
+        }
+
+        [dir="ltr"] .floating-controls {
+            right: 1rem;
+        }
+
+        [dir="rtl"] .floating-controls {
+            left: 1rem;
         }
 
         .login-card {
@@ -280,17 +377,62 @@
     private string _password = "";
     private string _errorMessage = "";
     private bool _isLoggingIn = false;
+    private bool _isDarkMode = false;
+    private bool _isRtl => Localization.IsArabic;
     private MudForm? _form;
 
     private bool _passwordVisible = false;
     private InputType _passwordInputType = InputType.Password;
     private string _passwordIcon = Icons.Material.Filled.VisibilityOff;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await Localization.InitializeAsync();
+
+        Localization.OnLanguageChanged += async () =>
+        {
+            await InvokeAsync(StateHasChanged);
+        };
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var savedTheme = await JS.InvokeAsync<string>("localStorage.getItem", "app_theme");
+                if (!string.IsNullOrEmpty(savedTheme))
+                {
+                    _isDarkMode = savedTheme == "dark";
+                    StateHasChanged();
+                }
+            }
+            catch { }
+        }
+    }
+
     private void TogglePasswordVisibility()
     {
         _passwordVisible = !_passwordVisible;
         _passwordInputType = _passwordVisible ? InputType.Text : InputType.Password;
         _passwordIcon = _passwordVisible ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", "app_theme", _isDarkMode ? "dark" : "light");
+        }
+        catch { }
+    }
+
+    private async Task ToggleLanguage()
+    {
+        await Localization.ToggleLanguageAsync();
     }
 
     private async Task HandleLogin()
@@ -315,7 +457,9 @@
         }
         else
         {
-            _errorMessage = "Invalid email or password. Please try again.";
+            _errorMessage = Localization.IsArabic
+                ? "البريد الإلكتروني أو كلمة المرور غير صحيحة. حاول مرة أخرى."
+                : "Invalid email or password. Please try again.";
             StateHasChanged();
         }
     }

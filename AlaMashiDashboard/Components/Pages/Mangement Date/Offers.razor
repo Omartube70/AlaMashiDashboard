@@ -1,7 +1,9 @@
-﻿@page "/offers"
+﻿@page "/Offers"
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject IDialogService DialogService
+@using AlaMashi.AdminDashboard.Components.Dialogs
 
 <PageTitle>Offers Management</PageTitle>
 
@@ -16,6 +18,12 @@
             <MudText Typo="Typo.body2" Color="Color.Secondary">Create and control discounts and promotional offers</MudText>
         </div>
         <div class="d-flex gap-2 mt-2 mt-md-0">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="OpenAddDialog">
+                Add Offer
+            </MudButton>
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Secondary"
                        StartIcon="@Icons.Material.Filled.Refresh"
@@ -252,11 +260,11 @@ else
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
                     Create your first promotional offer to attract more customers.
                 </MudText>
-                <MudButton Variant="Variant.Outlined"
-                           Color="Color.Secondary"
-                           OnClick="LoadDataAsync"
-                           StartIcon="@Icons.Material.Filled.Refresh">
-                    Retry
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="OpenAddDialog"
+                           StartIcon="@Icons.Material.Filled.Add">
+                    Create First Offer
                 </MudButton>
             </div>
         </MudCardContent>
@@ -386,6 +394,33 @@ else
         }
     }
 
+    // ========== DIALOG METHODS ==========
+    private async Task OpenAddDialog()
+    {
+        var dialog = await DialogService.ShowAsync<AddOfferDialog>(
+            "Create New Offer",
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = false
+            });
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadDataAsync();
+        }
+    }
+
+    private async Task OpenEditDialog(OfferDto offer)
+    {
+        Snackbar.Add($"Edit feature for {offer.Title} - Coming soon", Severity.Info);
+    }
+
+    // ========== FILTER & SEARCH METHODS ==========
     private IEnumerable<OfferDto> GetFilteredOffers()
     {
         if (offersList == null) return Enumerable.Empty<OfferDto>();
@@ -423,14 +458,10 @@ else
         return offersList.Count(o => GetOfferStatus(o) == status);
     }
 
+    // ========== ACTION METHODS ==========
     private void ViewOffer(OfferDto offer)
     {
         Snackbar.Add($"Viewing details for: {offer.Title}", Severity.Info);
-    }
-
-    private void OpenEditDialog(OfferDto offer)
-    {
-        Snackbar.Add($"Edit feature for {offer.Title} - Coming soon", Severity.Info);
     }
 
     private async Task DeleteOffer(OfferDto offer)
@@ -447,6 +478,7 @@ else
         }
     }
 
+    // ========== EXPORT METHOD ==========
     private async Task ExportToCSV()
     {
         if (offersList == null || !offersList.Any()) return;

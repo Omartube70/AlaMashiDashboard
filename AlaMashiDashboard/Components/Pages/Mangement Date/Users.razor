@@ -3,36 +3,62 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 @inject IDialogService DialogService
+@using AdminDashboard.Services
+@inject LocalizationService Localization
 
-<PageTitle>User Management</PageTitle>
+<PageTitle>@Localization.Get("users.title")</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
             <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
-                <MudIcon Icon="@Icons.Material.Filled.People" Class="mr-2" />
-                User Management
+                <MudIcon Icon="@Icons.Material.Filled.People" Class="@(_isRtl ? "ml-2" : "mr-2")" />
+                @Localization.Get("users.title")
             </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Manage and view all registered users in the system</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("users.subtitle")</MudText>
         </div>
         <div class="d-flex gap-2 mt-2 mt-md-0">
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Secondary"
                        StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="LoadDataAsync">
-                Refresh
+                @Localization.Get("common.refresh")
             </MudButton>
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        StartIcon="@Icons.Material.Filled.FileDownload"
                        OnClick="ExportToCSV"
                        Disabled="@(usersList == null || !usersList.Any())">
-                Export CSV
+                @Localization.Get("common.export")
             </MudButton>
         </div>
     </div>
 </div>
+
+<!-- Filter Chips -->
+<MudPaper Class="pa-3 mb-4 slide-up" Elevation="1">
+    <div class="d-flex flex-wrap gap-2 align-center">
+        <MudText Typo="Typo.body2" Class="@(_isRtl ? "ml-2" : "mr-2")">@Localization.Get("common.filter"):</MudText>
+        <MudChip Color="@(_roleFilter == null ? Color.Primary : Color.Default)"
+                 OnClick="@(() => FilterByRole(null))"
+                 Size="Size.Small">
+            @Localization.Get("common.all") (@(usersList?.Count ?? 0))
+        </MudChip>
+        <MudChip Color="@(_roleFilter == "Admin" ? Color.Error : Color.Default)"
+                 OnClick="@(() => FilterByRole("Admin"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.AdminPanelSettings">
+            @Localization.Get("users.admin") (@GetRoleCount("Admin"))
+        </MudChip>
+        <MudChip Color="@(_roleFilter == "User" ? Color.Info : Color.Default)"
+                 OnClick="@(() => FilterByRole("User"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Person">
+            @Localization.Get("users.user") (@GetRoleCount("User"))
+        </MudChip>
+    </div>
+</MudPaper>
 
 @if (isLoading)
 {
@@ -40,7 +66,7 @@
         <MudCardContent>
             <div class="d-flex flex-column justify-center align-center pa-8">
                 <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading users...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">@Localization.Get("common.loading")</MudText>
             </div>
         </MudCardContent>
     </MudCard>
@@ -53,74 +79,74 @@ else if (usersList != null && usersList.Any())
                       Hover="true"
                       Breakpoint="Breakpoint.Sm"
                       FixedHeader="true"
-                      Height="calc(100vh - 320px)"
+                      Height="calc(100vh - 400px)"
                       Class="custom-table">
 
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString"
-                                  Placeholder="Search users..."
+                                  Placeholder="@Localization.Get("common.search")"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   IconSize="Size.Medium"
                                   Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Class="mr-2"
+                                  Class="@(_isRtl ? "ml-2" : "mr-2")"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Showing <strong>@GetFilteredUsers().Count()</strong> of <strong>@usersList.Count</strong> users
+                        @Localization.Get("categories.showing") <strong>@GetFilteredUsers().Count()</strong> @Localization.Get("common.of") <strong>@usersList.Count</strong>
                     </MudText>
                 </ToolBarContent>
 
                 <HeaderContent>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<UserDto, object>(x => x.UserId)">
-                            ID
+                            @Localization.Get("users.id")
                         </MudTableSortLabel>
                     </MudTh>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<UserDto, object>(x => x.UserName)">
-                            Username
+                            @Localization.Get("users.username")
                         </MudTableSortLabel>
                     </MudTh>
-                    <MudTh>Email</MudTh>
-                    <MudTh>Phone</MudTh>
-                    <MudTh>Role</MudTh>
-                    <MudTh Style="text-align: right;">Actions</MudTh>
+                    <MudTh>@Localization.Get("users.email")</MudTh>
+                    <MudTh>@Localization.Get("users.phone")</MudTh>
+                    <MudTh>@Localization.Get("users.role")</MudTh>
+                    <MudTh Style="text-align: right;">@Localization.Get("common.actions")</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
-                    <MudTd DataLabel="ID">
+                    <MudTd DataLabel="@Localization.Get("users.id")">
                         <MudChip Size="Size.Small" Color="Color.Default">@context.UserId</MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Username">
+                    <MudTd DataLabel="@Localization.Get("users.username")">
                         <div class="d-flex align-center">
-                            <MudAvatar Size="Size.Small" Color="@(context.IsAdmin? Color.Error: Color.Primary)" Class="mr-2">
+                            <MudAvatar Size="Size.Small" Color="@(context.UserRole == "Admin" ? Color.Error : Color.Primary)" Class="@(_isRtl ? "ml-2" : "mr-2")">
                                 @context.UserName.Substring(0, 1).ToUpper()
                             </MudAvatar>
                             <MudText Typo="Typo.body2" Class="font-weight-medium">@context.UserName</MudText>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Email">
+                    <MudTd DataLabel="@Localization.Get("users.email")">
                         <div class="d-flex align-center">
-                            <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Info" Class="mr-1" />
+                            <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" Color="Color.Info" Class="@(_isRtl ? "ml-1" : "mr-1")" />
                             <MudText Typo="Typo.body2" Color="Color.Secondary">@context.Email</MudText>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Phone">
+                    <MudTd DataLabel="@Localization.Get("users.phone")">
                         <div class="d-flex align-center">
-                            <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Success" Class="mr-1" />
+                            <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" Color="Color.Success" Class="@(_isRtl ? "ml-1" : "mr-1")" />
                             <MudText Typo="Typo.body2" Color="Color.Secondary">@context.Phone</MudText>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Role">
-                        @if (context.IsAdmin)
+                    <MudTd DataLabel="@Localization.Get("users.role")">
+                        @if (context.UserRole == "Admin")
                         {
                             <MudChip Size="Size.Small"
                                      Color="Color.Error"
                                      Icon="@Icons.Material.Filled.AdminPanelSettings">
-                                Admin
+                                @Localization.Get("users.admin")
                             </MudChip>
                         }
                         else
@@ -128,33 +154,33 @@ else if (usersList != null && usersList.Any())
                             <MudChip Size="Size.Small"
                                      Color="Color.Default"
                                      Icon="@Icons.Material.Filled.Person">
-                                User
+                                @Localization.Get("users.user")
                             </MudChip>
                         }
                     </MudTd>
-                    <MudTd DataLabel="Actions" Style="text-align: right;">
-                        <MudTooltip Text="View Details">
+                    <MudTd DataLabel="@Localization.Get("common.actions")" Style="text-align: right;">
+                        <MudTooltip Text="@Localization.Get("common.view")">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
                                            Size="Size.Small"
                                            Color="Color.Default"
                                            OnClick="@(() => ViewUser(context))" />
                         </MudTooltip>
-                        @if (!context.IsAdmin)
+                        @if (context.UserRole != "Admin")
                         {
-                            <MudTooltip Text="Promote to Admin">
+                            <MudTooltip Text="@Localization.Get("users.promote")">
                                 <MudIconButton Icon="@Icons.Material.Filled.AdminPanelSettings"
                                                Size="Size.Small"
                                                Color="Color.Warning"
                                                OnClick="@(() => PromoteToAdmin(context))" />
                             </MudTooltip>
                         }
-                        <MudTooltip Text="Edit">
+                        <MudTooltip Text="@Localization.Get("common.edit")">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Size="Size.Small"
                                            Color="Color.Info"
                                            OnClick="@(() => OpenEditDialog(context))" />
                         </MudTooltip>
-                        <MudTooltip Text="Delete">
+                        <MudTooltip Text="@Localization.Get("common.delete")">
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                            Size="Size.Small"
                                            Color="Color.Error"
@@ -174,16 +200,16 @@ else if (usersList != null && usersList.Any())
     <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
         <div class="d-flex justify-space-between align-center flex-wrap gap-2">
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small" Class="mr-1" />
-                Total Users: <strong>@usersList.Count</strong>
+                <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("users.total"): <strong>@usersList.Count</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Error">
-                <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" Class="mr-1" />
-                Admins: <strong>@usersList.Count(u => u.IsAdmin)</strong>
+                <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("users.admins"): <strong>@GetRoleCount("Admin")</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Primary">
-                <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1" />
-                Regular Users: <strong>@usersList.Count(u => !u.IsAdmin)</strong>
+                <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("users.regular"): <strong>@GetRoleCount("User")</strong>
             </MudText>
         </div>
     </MudPaper>
@@ -198,15 +224,15 @@ else
                          Color="Color.Secondary"
                          Class="mb-4 pulse-icon"
                          Style="font-size: 5rem;" />
-                <MudText Typo="Typo.h6" Class="mb-2">No Users Found</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">@Localization.Get("users.empty")</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Start by adding your first user to the system.
+                    @Localization.Get("users.empty_msg")
                 </MudText>
                 <MudButton Variant="Variant.Outlined"
                            Color="Color.Secondary"
                            OnClick="LoadDataAsync"
                            StartIcon="@Icons.Material.Filled.Refresh">
-                    Retry
+                    @Localization.Get("common.retry")
                 </MudButton>
             </div>
         </MudCardContent>
@@ -304,8 +330,15 @@ else
 
 @code {
     private bool isLoading = true;
+    private bool _isRtl => Localization.IsArabic;
     private List<UserDto>? usersList;
     private string _searchString = "";
+    private string? _roleFilter = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += async () => await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -326,7 +359,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error loading users: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -338,78 +371,101 @@ else
     private IEnumerable<UserDto> GetFilteredUsers()
     {
         if (usersList == null) return Enumerable.Empty<UserDto>();
-        if (string.IsNullOrWhiteSpace(_searchString)) return usersList;
 
-        return usersList.Where(u =>
-            u.UserName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-            u.Email.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-            u.Phone.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-            u.UserId.ToString().Contains(_searchString)
-        );
+        var filtered = usersList.AsEnumerable();
+
+        if (_roleFilter != null)
+            filtered = filtered.Where(u => u.UserRole == _roleFilter);
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+            filtered = filtered.Where(u =>
+                u.UserName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                u.Email.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                u.Phone.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                u.UserId.ToString().Contains(_searchString));
+
+        return filtered;
     }
+
+    private void FilterByRole(string? role) => _roleFilter = role;
+    private int GetRoleCount(string role) => usersList?.Count(u => u.UserRole == role) ?? 0;
 
     private async Task PromoteToAdmin(UserDto user)
     {
-        var parameters = new DialogParameters
-        {
-            ["ContentText"] = $"Are you sure you want to promote '{user.UserName}' to Admin? This will grant them full administrative privileges.",
-            ["ButtonText"] = "Promote",
-            ["Color"] = Color.Warning
-        };
+        var confirmed = await DialogService.ShowMessageBox(
+            Localization.Get("users.promote"),
+            Localization.IsArabic
+                ? $"هل أنت متأكد من ترقية '{user.UserName}' إلى مدير؟ سيمنحه هذا صلاحيات إدارية كاملة."
+                : $"Are you sure you want to promote '{user.UserName}' to Admin? This will grant them full administrative privileges.",
+            yesText: Localization.Get("users.promote"),
+            cancelText: Localization.Get("common.cancel"));
 
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Promote to Admin", parameters, options);
-        var result = await dialog.Result;
-
-        if (result.Canceled) return;
+        if (confirmed != true) return;
 
         try
         {
-            var response = await ApiService.PostAsync<object>($"/api/Users/{user.UserId}/promote-to-admin", null);
-
-            Snackbar.Add($"User '{user.UserName}' has been promoted to Admin successfully!", Severity.Success);
+            await ApiService.PostAsync<object>($"/api/Users/{user.UserId}/promote-to-admin", null);
+            Snackbar.Add(Localization.IsArabic
+                ? $"تمت ترقية '{user.UserName}' إلى مدير بنجاح!"
+                : $"User '{user.UserName}' has been promoted to Admin successfully!", Severity.Success);
             await LoadDataAsync();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to promote user: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
         }
     }
 
-    private void ViewUser(UserDto user)
+    private async Task ViewUser(UserDto user)
     {
-        Snackbar.Add($"Viewing details for {user.UserName}", Severity.Info);
+        var details = Localization.IsArabic
+            ? $@"تفاصيل المستخدم:
+
+الرقم: {user.UserId}
+الاسم: {user.UserName}
+البريد: {user.Email}
+الهاتف: {user.Phone}
+الدور: {(user.UserRole == "Admin" ? "مدير" : "مستخدم")}"
+            : $@"User Details:
+
+ID: {user.UserId}
+Name: {user.UserName}
+Email: {user.Email}
+Phone: {user.Phone}
+Role: {user.UserRole}";
+        await DialogService.ShowMessageBox(Localization.Get("common.view"), details, yesText: Localization.Get("common.close"));
     }
 
     private void OpenEditDialog(UserDto user)
     {
-        Snackbar.Add($"Edit feature for {user.UserName} - Coming soon", Severity.Info);
+        Snackbar.Add(Localization.IsArabic
+            ? $"ميزة التعديل لـ {user.UserName} - قريباً"
+            : $"Edit feature for {user.UserName} - Coming soon", Severity.Info);
     }
 
     private async Task DeleteUser(UserDto user)
     {
-        var parameters = new DialogParameters
-        {
-            ["ContentText"] = $"Are you sure you want to delete user '{user.UserName}'? This action cannot be undone.",
-            ["ButtonText"] = "Delete",
-            ["Color"] = Color.Error
-        };
+        var confirmed = await DialogService.ShowMessageBox(
+            Localization.Get("common.delete"),
+            Localization.IsArabic
+                ? $"هل أنت متأكد من حذف المستخدم '{user.UserName}'؟ لا يمكن التراجع عن هذا الإجراء."
+                : $"Are you sure you want to delete user '{user.UserName}'? This action cannot be undone.",
+            yesText: Localization.Get("common.delete"),
+            cancelText: Localization.Get("common.cancel"));
 
-        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete User", parameters, options);
-        var result = await dialog.Result;
-
-        if (result.Canceled) return;
+        if (confirmed != true) return;
 
         try
         {
             await ApiService.DeleteAsync($"/api/Users/{user.UserId}");
-            Snackbar.Add($"User '{user.UserName}' has been deleted successfully!", Severity.Success);
+            Snackbar.Add(Localization.IsArabic
+                ? $"تم حذف المستخدم '{user.UserName}' بنجاح!"
+                : $"User '{user.UserName}' has been deleted successfully!", Severity.Success);
             await LoadDataAsync();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to delete user: {ex.Message}", Severity.Error);
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
         }
     }
 
@@ -423,14 +479,16 @@ else
 
         foreach (var user in filtered)
         {
-            csv.AppendLine($"{user.UserId},{user.UserName},{user.Email},{user.Phone},{(user.IsAdmin ? "Admin" : "User")}");
+            csv.AppendLine($"{user.UserId},{user.UserName},{user.Email},{user.Phone},{user.UserRole}");
         }
 
         var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
         var base64 = Convert.ToBase64String(bytes);
         await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Users_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
 
-        Snackbar.Add($"Exported {filtered.Count} users successfully!", Severity.Success);
+        Snackbar.Add(Localization.IsArabic
+            ? $"تم تصدير {filtered.Count} مستخدم بنجاح!"
+            : $"Exported {filtered.Count} users successfully!", Severity.Success);
     }
 
     public class UserDto
@@ -439,22 +497,6 @@ else
         [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
         [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
         [JsonPropertyName("phone")] public string Phone { get; set; } = string.Empty;
-        [JsonPropertyName("isAdmin")] public bool IsAdmin { get; set; }
-    }
-}
-
-@* Confirm Dialog Component *@
-@code {
-    public class ConfirmDialog : ComponentBase
-    {
-        [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
-        [Parameter] public string ContentText { get; set; } = string.Empty;
-        [Parameter] public string ButtonText { get; set; } = "Confirm";
-        [Parameter] public Color Color { get; set; } = Color.Primary;
-
-        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
-        {
-            // Dialog will be rendered by MudBlazor
-        }
+        [JsonPropertyName("userRole")] public string UserRole { get; set; } = string.Empty;
     }
 }

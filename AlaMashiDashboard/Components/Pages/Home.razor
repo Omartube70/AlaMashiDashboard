@@ -1,18 +1,20 @@
 ﻿@page "/"
 @inject ApiService ApiService
 @inject NavigationManager NavManager
+@using AdminDashboard.Services
 @inject TokenManagerService TokenManager
+@inject LocalizationService Localization
 
-<PageTitle>Dashboard - AlaMashi</PageTitle>
+<PageTitle>@Localization.Get("menu.dashboard") - @Localization.Get("app.title")</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 fade-in">
     <MudText Typo="Typo.h4" Class="font-weight-bold mb-2">
-        <MudIcon Icon="@Icons.Material.Filled.Dashboard" Class="mr-2" />
-        Dashboard Overview
+        <MudIcon Icon="@Icons.Material.Filled.Dashboard" Class="mx-2" />
+        @Localization.Get("dashboard.title")
     </MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary">
-        Welcome back, @_userName! Here's what's happening today.
+        @Localization.Get("dashboard.welcome") @_userName! @Localization.Get("dashboard.welcome_msg")
     </MudText>
 </div>
 
@@ -46,11 +48,13 @@ else if (dashboardData != null)
                         @if (dashboardData.OrderStatusSummary.TotalOrders > 0)
                         {
                             <MudChip Size="Size.Small" Color="Color.Info">
-                                @dashboardData.OrderStatusSummary.PendingCount pending
+                                @dashboardData.OrderStatusSummary.PendingCount @(Localization.IsArabic ? "معلق" : "pending")
                             </MudChip>
                         }
                     </div>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">Total Orders</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                        @Localization.Get("dashboard.total_orders")
+                    </MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold">
                         @dashboardData.TotalOrders.ToString("N0")
                     </MudText>
@@ -66,11 +70,15 @@ else if (dashboardData != null)
                         <MudIcon Icon="@Icons.Material.Filled.TrendingUp"
                                  Size="Size.Large"
                                  Color="Color.Success" />
-                        <MudChip Size="Size.Small" Color="Color.Success">Today</MudChip>
+                        <MudChip Size="Size.Small" Color="Color.Success">
+                            @(Localization.IsArabic ? "اليوم" : "Today")
+                        </MudChip>
                     </div>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">Today's Revenue</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                        @Localization.Get("dashboard.today_revenue")
+                    </MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold">
-                        @dashboardData.TodayRevenue.ToString("N2") EGP
+                        @dashboardData.TodayRevenue.ToString("N2") @(Localization.IsArabic ? "ج.م" : "EGP")
                     </MudText>
                 </MudCardContent>
             </MudCard>
@@ -84,11 +92,15 @@ else if (dashboardData != null)
                         <MudIcon Icon="@Icons.Material.Filled.AttachMoney"
                                  Size="Size.Large"
                                  Color="Color.Warning" />
-                        <MudChip Size="Size.Small" Color="Color.Warning">Month</MudChip>
+                        <MudChip Size="Size.Small" Color="Color.Warning">
+                            @(Localization.IsArabic ? "الشهر" : "Month")
+                        </MudChip>
                     </div>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">Monthly Revenue</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                        @Localization.Get("dashboard.month_revenue")
+                    </MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold">
-                        @dashboardData.MonthRevenue.ToString("N2") EGP
+                        @dashboardData.MonthRevenue.ToString("N2") @(Localization.IsArabic ? "ج.م" : "EGP")
                     </MudText>
                 </MudCardContent>
             </MudCard>
@@ -103,7 +115,9 @@ else if (dashboardData != null)
                                  Size="Size.Large"
                                  Color="Color.Info" />
                     </div>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">Total Users</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                        @Localization.Get("dashboard.total_users")
+                    </MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold">
                         @dashboardData.TotalUsers.ToString("N0")
                     </MudText>
@@ -120,7 +134,9 @@ else if (dashboardData != null)
                                  Size="Size.Large"
                                  Color="Color.Secondary" />
                     </div>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">Total Products</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                        @Localization.Get("dashboard.total_products")
+                    </MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold">
                         @dashboardData.TotalProducts.ToString("N0")
                     </MudText>
@@ -137,7 +153,9 @@ else if (dashboardData != null)
                                  Size="Size.Large"
                                  Color="Color.Tertiary" />
                     </div>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">Categories</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                        @Localization.Get("dashboard.categories")
+                    </MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold">
                         @dashboardData.TotalCategories.ToString("N0")
                     </MudText>
@@ -155,10 +173,14 @@ else if (dashboardData != null)
                                  Color="Color.Error" />
                         @if (dashboardData.TotalActiveOffers > 0)
                         {
-                            <MudChip Size="Size.Small" Color="Color.Error">Live</MudChip>
+                            <MudChip Size="Size.Small" Color="Color.Error">
+                                @(Localization.IsArabic ? "نشط" : "Live")
+                            </MudChip>
                         }
                     </div>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">Active Offers</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                        @Localization.Get("dashboard.active_offers")
+                    </MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold">
                         @dashboardData.TotalActiveOffers.ToString("N0")
                     </MudText>
@@ -176,10 +198,14 @@ else if (dashboardData != null)
                                  Color="Color.Warning" />
                         @if (dashboardData.PendingOrders > 0)
                         {
-                            <MudChip Size="Size.Small" Color="Color.Warning">Action Needed</MudChip>
+                            <MudChip Size="Size.Small" Color="Color.Warning">
+                                @(Localization.IsArabic ? "يحتاج إجراء" : "Action Needed")
+                            </MudChip>
                         }
                     </div>
-                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">Pending Orders</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-1">
+                        @Localization.Get("dashboard.pending_orders")
+                    </MudText>
                     <MudText Typo="Typo.h4" Class="font-weight-bold">
                         @dashboardData.PendingOrders.ToString("N0")
                     </MudText>
@@ -196,8 +222,10 @@ else if (dashboardData != null)
                 <MudCardHeader>
                     <CardHeaderContent>
                         <div class="d-flex align-center">
-                            <MudIcon Icon="@Icons.Material.Filled.BarChart" Class="mr-2" Color="Color.Success" />
-                            <MudText Typo="Typo.h6">Revenue Analysis</MudText>
+                            <MudIcon Icon="@Icons.Material.Filled.BarChart" Class="mx-2" Color="Color.Success" />
+                            <MudText Typo="Typo.h6">
+                                @(Localization.IsArabic ? "تحليل الإيرادات" : "Revenue Analysis")
+                            </MudText>
                         </div>
                     </CardHeaderContent>
                 </MudCardHeader>
@@ -218,8 +246,10 @@ else if (dashboardData != null)
                 <MudCardHeader>
                     <CardHeaderContent>
                         <div class="d-flex align-center">
-                            <MudIcon Icon="@Icons.Material.Filled.DonutLarge" Class="mr-2" Color="Color.Primary" />
-                            <MudText Typo="Typo.h6">Order Status</MudText>
+                            <MudIcon Icon="@Icons.Material.Filled.DonutLarge" Class="mx-2" Color="Color.Primary" />
+                            <MudText Typo="Typo.h6">
+                                @(Localization.IsArabic ? "حالة الطلبات" : "Order Status")
+                            </MudText>
                         </div>
                     </CardHeaderContent>
                 </MudCardHeader>
@@ -244,13 +274,15 @@ else if (dashboardData != null)
                     <CardHeaderContent>
                         <div class="d-flex align-center justify-space-between">
                             <div class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Class="mr-2" Color="Color.Warning" />
-                                <MudText Typo="Typo.h6">Top Selling Products</MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.TrendingUp" Class="mx-2" Color="Color.Warning" />
+                                <MudText Typo="Typo.h6">
+                                    @(Localization.IsArabic ? "المنتجات الأكثر مبيعاً" : "Top Selling Products")
+                                </MudText>
                             </div>
                             @if (dashboardData.TopSellingProducts?.Any() == true)
                             {
                                 <MudChip Size="Size.Small" Color="Color.Success">
-                                    @dashboardData.TopSellingProducts.Count items
+                                    @dashboardData.TopSellingProducts.Count @(Localization.IsArabic ? "منتج" : "items")
                                 </MudChip>
                             }
                         </div>
@@ -265,7 +297,7 @@ else if (dashboardData != null)
                                 <MudListItem>
                                     <div class="d-flex justify-space-between align-center w-100">
                                         <div class="d-flex align-center">
-                                            <MudAvatar Color="Color.Primary" Size="Size.Medium" Class="mr-3">
+                                            <MudAvatar Color="Color.Primary" Size="Size.Medium" Class="mx-3">
                                                 @product.ProductId
                                             </MudAvatar>
                                             <div>
@@ -273,12 +305,12 @@ else if (dashboardData != null)
                                                     @product.ProductName
                                                 </MudText>
                                                 <MudText Typo="Typo.caption" Color="Color.Secondary">
-                                                    Sold: @product.TotalQuantitySold units
+                                                    @(Localization.IsArabic ? "تم البيع:" : "Sold:") @product.TotalQuantitySold @(Localization.IsArabic ? "وحدة" : "units")
                                                 </MudText>
                                             </div>
                                         </div>
                                         <MudChip Size="Size.Small" Color="Color.Success">
-                                            @product.TotalRevenue.ToString("N2") EGP
+                                            @product.TotalRevenue.ToString("N2") @(Localization.IsArabic ? "ج.م" : "EGP")
                                         </MudChip>
                                     </div>
                                 </MudListItem>
@@ -294,7 +326,7 @@ else if (dashboardData != null)
                                      Color="Color.Secondary"
                                      Class="mb-3" />
                             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                                No sales data available yet
+                                @(Localization.IsArabic ? "لا توجد بيانات مبيعات حتى الآن" : "No sales data available yet")
                             </MudText>
                         </div>
                     }
@@ -308,8 +340,10 @@ else if (dashboardData != null)
                 <MudCardHeader>
                     <CardHeaderContent>
                         <div class="d-flex align-center">
-                            <MudIcon Icon="@Icons.Material.Filled.Assessment" Class="mr-2" Color="Color.Info" />
-                            <MudText Typo="Typo.h6">Order Statistics</MudText>
+                            <MudIcon Icon="@Icons.Material.Filled.Assessment" Class="mx-2" Color="Color.Info" />
+                            <MudText Typo="Typo.h6">
+                                @(Localization.IsArabic ? "إحصائيات الطلبات" : "Order Statistics")
+                            </MudText>
                         </div>
                     </CardHeaderContent>
                 </MudCardHeader>
@@ -317,8 +351,10 @@ else if (dashboardData != null)
                     <MudStack Spacing="3">
                         <div class="d-flex justify-space-between align-center">
                             <div class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Warning" Class="mr-2" />
-                                <MudText Typo="Typo.body2">Pending</MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Warning" Class="mx-2" />
+                                <MudText Typo="Typo.body2">
+                                    @(Localization.IsArabic ? "معلق" : "Pending")
+                                </MudText>
                             </div>
                             <MudChip Size="Size.Small" Color="Color.Warning">
                                 @dashboardData.OrderStatusSummary.PendingCount
@@ -328,8 +364,10 @@ else if (dashboardData != null)
 
                         <div class="d-flex justify-space-between align-center">
                             <div class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.Inventory" Color="Color.Info" Class="mr-2" />
-                                <MudText Typo="Typo.body2">In Preparation</MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.Inventory" Color="Color.Info" Class="mx-2" />
+                                <MudText Typo="Typo.body2">
+                                    @(Localization.IsArabic ? "قيد التحضير" : "In Preparation")
+                                </MudText>
                             </div>
                             <MudChip Size="Size.Small" Color="Color.Info">
                                 @dashboardData.OrderStatusSummary.InPreparationCount
@@ -339,8 +377,10 @@ else if (dashboardData != null)
 
                         <div class="d-flex justify-space-between align-center">
                             <div class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Color="Color.Secondary" Class="mr-2" />
-                                <MudText Typo="Typo.body2">Out for Delivery</MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Color="Color.Secondary" Class="mx-2" />
+                                <MudText Typo="Typo.body2">
+                                    @(Localization.IsArabic ? "في التوصيل" : "Out for Delivery")
+                                </MudText>
                             </div>
                             <MudChip Size="Size.Small" Color="Color.Secondary">
                                 @dashboardData.OrderStatusSummary.OutForDeliveryCount
@@ -350,8 +390,10 @@ else if (dashboardData != null)
 
                         <div class="d-flex justify-space-between align-center">
                             <div class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="mr-2" />
-                                <MudText Typo="Typo.body2">Delivered</MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Class="mx-2" />
+                                <MudText Typo="Typo.body2">
+                                    @(Localization.IsArabic ? "تم التوصيل" : "Delivered")
+                                </MudText>
                             </div>
                             <MudChip Size="Size.Small" Color="Color.Success">
                                 @dashboardData.OrderStatusSummary.DeliveredCount
@@ -361,8 +403,10 @@ else if (dashboardData != null)
 
                         <div class="d-flex justify-space-between align-center">
                             <div class="d-flex align-center">
-                                <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Class="mr-2" />
-                                <MudText Typo="Typo.body2">Canceled</MudText>
+                                <MudIcon Icon="@Icons.Material.Filled.Cancel" Color="Color.Error" Class="mx-2" />
+                                <MudText Typo="Typo.body2">
+                                    @(Localization.IsArabic ? "ملغي" : "Canceled")
+                                </MudText>
                             </div>
                             <MudChip Size="Size.Small" Color="Color.Error">
                                 @dashboardData.OrderStatusSummary.CanceledCount
@@ -376,7 +420,7 @@ else if (dashboardData != null)
                                FullWidth="true"
                                Href="/orders"
                                StartIcon="@Icons.Material.Filled.ShoppingCart">
-                        View All Orders
+                        @(Localization.IsArabic ? "عرض كل الطلبات" : "View All Orders")
                     </MudButton>
                 </MudCardActions>
             </MudCard>
@@ -393,15 +437,17 @@ else
                          Color="Color.Error"
                          Class="mb-4"
                          Style="font-size: 5rem;" />
-                <MudText Typo="Typo.h6" Class="mb-2">Failed to Load Dashboard</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">
+                    @(Localization.IsArabic ? "فشل في تحميل لوحة التحكم" : "Failed to Load Dashboard")
+                </MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Unable to fetch dashboard data. Please try again.
+                    @(Localization.IsArabic ? "تعذر تحميل بيانات لوحة التحكم. يرجى المحاولة مرة أخرى." : "Unable to fetch dashboard data. Please try again.")
                 </MudText>
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            OnClick="LoadDataAsync"
                            StartIcon="@Icons.Material.Filled.Refresh">
-                    Retry
+                    @(Localization.IsArabic ? "إعادة المحاولة" : "Retry")
                 </MudButton>
             </div>
         </MudCardContent>
@@ -490,10 +536,10 @@ else
     private List<ChartSeries> revenueChartSeries = new();
     private string[] revenueChartLabels = Array.Empty<string>();
     private ChartOptions revenueChartOptions = new()
-    {
-        YAxisTicks = 5,
-        MaxNumYAxisTicks = 10
-    };
+        {
+            YAxisTicks = 5,
+            MaxNumYAxisTicks = 10
+        };
 
     // Order Status Chart
     private double[] orderStatusData = Array.Empty<double>();
@@ -501,6 +547,13 @@ else
 
     protected override void OnInitialized()
     {
+        Localization.OnLanguageChanged += async () =>
+        {
+            PrepareRevenueChart();
+            PrepareOrderStatusChart();
+            await InvokeAsync(StateHasChanged);
+        };
+
         TokenManager.OnUserNameChanged += async () =>
         {
             _userName = await TokenManager.GetUserNameAsync() ?? "User";
@@ -551,20 +604,22 @@ else
     {
         if (dashboardData?.RevenueAnalysis == null) return;
 
-        revenueChartLabels = new[] { "Today", "This Week", "This Month", "This Year", "Total" };
+        revenueChartLabels = Localization.IsArabic
+            ? new[] { "اليوم", "هذا الأسبوع", "هذا الشهر", "هذه السنة", "الإجمالي" }
+            : new[] { "Today", "This Week", "This Month", "This Year", "Total" };
 
         revenueChartSeries = new List<ChartSeries>
         {
             new ChartSeries
             {
-                Name = "Revenue (EGP)",
+                Name = Localization.IsArabic ? "الإيرادات (ج.م)" : "Revenue (EGP)",
                 Data = new[]
                 {
-                (double)dashboardData.RevenueAnalysis.TodayRevenue,
-                (double)dashboardData.RevenueAnalysis.ThisWeekRevenue,
-                (double)dashboardData.RevenueAnalysis.ThisMonthRevenue,
-                (double)dashboardData.RevenueAnalysis.ThisYearRevenue,
-                (double)dashboardData.RevenueAnalysis.TotalRevenue
+                    (double)dashboardData.RevenueAnalysis.TodayRevenue,
+                    (double)dashboardData.RevenueAnalysis.ThisWeekRevenue,
+                    (double)dashboardData.RevenueAnalysis.ThisMonthRevenue,
+                    (double)dashboardData.RevenueAnalysis.ThisYearRevenue,
+                    (double)dashboardData.RevenueAnalysis.TotalRevenue
                 }
             }
         };
@@ -576,7 +631,10 @@ else
 
         var summary = dashboardData.OrderStatusSummary;
 
-        orderStatusLabels = new[] { "Pending", "In Preparation", "Out for Delivery", "Delivered", "Canceled" };
+        orderStatusLabels = Localization.IsArabic
+            ? new[] { "معلق", "قيد التحضير", "في التوصيل", "تم التوصيل", "ملغي" }
+            : new[] { "Pending", "In Preparation", "Out for Delivery", "Delivered", "Canceled" };
+
         orderStatusData = new[]
         {
             (double)summary.PendingCount,
@@ -597,9 +655,11 @@ else
         [JsonPropertyName("pendingOrders")] public int PendingOrders { get; set; }
         [JsonPropertyName("todayRevenue")] public decimal TodayRevenue { get; set; }
         [JsonPropertyName("monthRevenue")] public decimal MonthRevenue { get; set; }
+
         [JsonPropertyName("revenueAnalysis")] public RevenueAnalysisDto? RevenueAnalysis { get; set; }
-        [JsonPropertyName("orderStatusSummary")] public OrderStatusSummaryDto? OrderStatusSummary { get; set; }
         [JsonPropertyName("topSellingProducts")] public List<TopSellingProductDto>? TopSellingProducts { get; set; }
+
+        [JsonPropertyName("orderStatusSummary")] public OrderStatusSummaryDto? OrderStatusSummary { get; set; }
     }
 
     public class RevenueAnalysisDto
@@ -611,16 +671,6 @@ else
         [JsonPropertyName("totalRevenue")] public decimal TotalRevenue { get; set; }
     }
 
-    public class OrderStatusSummaryDto
-    {
-        [JsonPropertyName("pendingCount")] public int PendingCount { get; set; }
-        [JsonPropertyName("inPreparationCount")] public int InPreparationCount { get; set; }
-        [JsonPropertyName("outForDeliveryCount")] public int OutForDeliveryCount { get; set; }
-        [JsonPropertyName("deliveredCount")] public int DeliveredCount { get; set; }
-        [JsonPropertyName("canceledCount")] public int CanceledCount { get; set; }
-        [JsonPropertyName("totalOrders")] public int TotalOrders { get; set; }
-    }
-
     public class TopSellingProductDto
     {
         [JsonPropertyName("productId")] public int ProductId { get; set; }
@@ -628,4 +678,16 @@ else
         [JsonPropertyName("totalQuantitySold")] public int TotalQuantitySold { get; set; }
         [JsonPropertyName("totalRevenue")] public decimal TotalRevenue { get; set; }
     }
+
+    public class OrderStatusSummaryDto
+    {
+        [JsonPropertyName("totalOrders")] public int TotalOrders { get; set; }
+        [JsonPropertyName("pendingCount")] public int PendingCount { get; set; }
+
+        [JsonPropertyName("inPreparationCount")] public int InPreparationCount { get; set; }
+        [JsonPropertyName("outForDeliveryCount")] public int OutForDeliveryCount { get; set; }
+        [JsonPropertyName("deliveredCount")] public int DeliveredCount { get; set; }
+        [JsonPropertyName("canceledCount")] public int CanceledCount { get; set; }
+    }
+
 }

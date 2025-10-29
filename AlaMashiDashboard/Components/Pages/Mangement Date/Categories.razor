@@ -1,39 +1,45 @@
-﻿@page "/categories"
+﻿@page "/Categories"
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@using AdminDashboard.Services
+@inject LocalizationService Localization
+@using AlaMashi.AdminDashboard.Components.Dialogs
 
-<PageTitle>Category Management</PageTitle>
+<PageTitle>@Localization.Get("categories.title")</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
-            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">📂 Categories Management</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Organize and manage product categories</MudText>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
+                📂 @Localization.Get("categories.title")
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("categories.subtitle")</MudText>
         </div>
         <MudButton Variant="Variant.Filled"
                    Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Add"
                    OnClick="OpenAddDialog"
                    Class="mt-2 mt-md-0 pulse-button">
-            Add Category
+            @Localization.Get("categories.add")
         </MudButton>
     </div>
 </div>
 
 @if (isLoading)
 {
-    <!-- Loading State with Animation -->
     <MudCard Elevation="2" Class="fade-in">
         <MudCardContent>
             <div class="d-flex flex-column justify-center align-center pa-8">
                 <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading categories...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">@Localization.Get("common.loading")</MudText>
             </div>
         </MudCardContent>
     </MudCard>
 }
 else if (categoriesList != null && categoriesList.Any())
 {
-    <!-- Categories Table -->
     <MudCard Elevation="2" Class="data-table-card fade-in">
         <MudCardContent Class="pa-0">
             <MudTable Items="@GetFilteredCategories()"
@@ -45,22 +51,22 @@ else if (categoriesList != null && categoriesList.Any())
 
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString"
-                                  Placeholder="Search categories..."
+                                  Placeholder="@Localization.Get("common.search")"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   IconSize="Size.Medium"
                                   Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Class="mr-2"
+                                  Class="@(_isRtl ? "ml-2" : "mr-2")"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
-                    <MudTooltip Text="Refresh">
+                    <MudTooltip Text="@Localization.Get("common.refresh")">
                         <MudIconButton Icon="@Icons.Material.Filled.Refresh"
                                        OnClick="LoadDataAsync"
                                        Color="Color.Primary" />
                     </MudTooltip>
-                    <MudTooltip Text="Export">
+                    <MudTooltip Text="@Localization.Get("common.export")">
                         <MudIconButton Icon="@Icons.Material.Filled.FileDownload"
                                        Color="Color.Secondary" />
                     </MudTooltip>
@@ -69,60 +75,60 @@ else if (categoriesList != null && categoriesList.Any())
                 <HeaderContent>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<CategoryDto, object>(x => x.CategoryId)">
-                            ID
+                            @Localization.Get("categories.id")
                         </MudTableSortLabel>
                     </MudTh>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<CategoryDto, object>(x => x.CategoryName)">
-                            Category Name
+                            @Localization.Get("categories.name")
                         </MudTableSortLabel>
                     </MudTh>
-                    <MudTh>Icon</MudTh>
-                    <MudTh>Parent Category</MudTh>
-                    <MudTh Style="text-align: right;">Actions</MudTh>
+                    <MudTh>@Localization.Get("categories.icon")</MudTh>
+                    <MudTh>@Localization.Get("categories.parent")</MudTh>
+                    <MudTh Style="text-align: right;">@Localization.Get("common.actions")</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
-                    <MudTd DataLabel="ID">
+                    <MudTd DataLabel="@Localization.Get("categories.id")">
                         <MudChip Size="Size.Small" Color="Color.Default">@context.CategoryId</MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Category Name">
+                    <MudTd DataLabel="@Localization.Get("categories.name")">
                         <div class="d-flex align-center">
-                            <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined" Class="mr-2">
+                            <MudAvatar Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined" Class="@(_isRtl ? "ml-2" : "mr-2")">
                                 <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Small" />
                             </MudAvatar>
                             <MudText Typo="Typo.body2" Class="font-weight-medium">@context.CategoryName</MudText>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Icon">
+                    <MudTd DataLabel="@Localization.Get("categories.icon")">
                         <MudChip Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.Image">
                             @context.IconName
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Parent">
+                    <MudTd DataLabel="@Localization.Get("categories.parent")">
                         @if (context.ParentId.HasValue)
                         {
                             <MudChip Size="Size.Small" Color="Color.Secondary">ID: @context.ParentId</MudChip>
                         }
                         else
                         {
-                            <MudChip Size="Size.Small" Color="Color.Default">Root</MudChip>
+                            <MudChip Size="Size.Small" Color="Color.Default">@Localization.Get("categories.root")</MudChip>
                         }
                     </MudTd>
-                    <MudTd DataLabel="Actions" Style="text-align: right;">
-                        <MudTooltip Text="View Details">
+                    <MudTd DataLabel="@Localization.Get("common.actions")" Style="text-align: right;">
+                        <MudTooltip Text="@Localization.Get("common.view")">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
                                            Size="Size.Small"
                                            Color="Color.Default"
                                            OnClick="@(() => ViewCategory(context))" />
                         </MudTooltip>
-                        <MudTooltip Text="Edit">
+                        <MudTooltip Text="@Localization.Get("common.edit")">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Size="Size.Small"
                                            Color="Color.Info"
                                            OnClick="@(() => OpenEditDialog(context))" />
                         </MudTooltip>
-                        <MudTooltip Text="Delete">
+                        <MudTooltip Text="@Localization.Get("common.delete")">
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                            Size="Size.Small"
                                            Color="Color.Error"
@@ -142,23 +148,22 @@ else if (categoriesList != null && categoriesList.Any())
     <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
         <div class="d-flex justify-space-between align-center flex-wrap gap-2">
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Class="mr-1" />
-                Total Categories: <strong>@categoriesList.Count</strong>
+                <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("categories.total"): <strong>@categoriesList.Count</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" Class="mr-1" />
-                Showing: <strong>@GetFilteredCategories().Count()</strong>
+                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("categories.showing"): <strong>@GetFilteredCategories().Count()</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Size="Size.Small" Class="mr-1" />
-                Root Categories: <strong>@categoriesList.Count(c => !c.ParentId.HasValue)</strong>
+                <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("categories.root_count"): <strong>@categoriesList.Count(c => !c.ParentId.HasValue)</strong>
             </MudText>
         </div>
     </MudPaper>
 }
 else
 {
-    <!-- Empty State -->
     <MudCard Elevation="2" Class="fade-in">
         <MudCardContent Class="pa-8">
             <div class="d-flex flex-column align-center text-center">
@@ -167,22 +172,22 @@ else
                          Color="Color.Secondary"
                          Class="mb-4 pulse-icon"
                          Style="font-size: 5rem;" />
-                <MudText Typo="Typo.h6" Class="mb-2">No Categories Found</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">@Localization.Get("categories.empty")</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Start by creating your first category to organize your products.
+                    @Localization.Get("categories.empty_msg")
                 </MudText>
                 <div class="d-flex gap-2">
                     <MudButton Variant="Variant.Filled"
                                Color="Color.Primary"
                                OnClick="OpenAddDialog"
                                StartIcon="@Icons.Material.Filled.Add">
-                        Add Category
+                        @Localization.Get("categories.add")
                     </MudButton>
                     <MudButton Variant="Variant.Outlined"
                                Color="Color.Secondary"
                                OnClick="LoadDataAsync"
                                StartIcon="@Icons.Material.Filled.Refresh">
-                        Retry
+                        @Localization.Get("common.retry")
                     </MudButton>
                 </div>
             </div>
@@ -295,8 +300,14 @@ else
 
 @code {
     private bool isLoading = true;
+    private bool _isRtl => Localization.IsArabic;
     private List<CategoryDto>? categoriesList;
     private string _searchString = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += async () => await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -310,11 +321,20 @@ else
         isLoading = true;
         StateHasChanged();
 
-        var categories = await ApiService.GetAsync<ApiService.ApiResponse<List<CategoryDto>>>("/api/Categories/flat");
-        categoriesList = categories?.Data;
-
-        isLoading = false;
-        StateHasChanged();
+        try
+        {
+            var categories = await ApiService.GetAsync<ApiService.ApiResponse<List<CategoryDto>>>("/api/Categories/flat");
+            categoriesList = categories?.Data;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
     private IEnumerable<CategoryDto> GetFilteredCategories()
@@ -331,24 +351,71 @@ else
         );
     }
 
-    private void OpenAddDialog()
+    private async Task OpenAddDialog()
     {
-        // TODO: Implement add dialog
+        var dialog = await DialogService.ShowAsync<AddCategoryDialog>(
+            Localization.Get("categories.add"),
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = false
+            });
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadDataAsync();
+        }
     }
 
     private void OpenEditDialog(CategoryDto category)
     {
-        // TODO: Implement edit dialog
+        Snackbar.Add(Localization.IsArabic
+            ? $"ميزة التعديل لـ {category.CategoryName} - قريباً"
+            : $"Edit feature for {category.CategoryName} - Coming soon", Severity.Info);
     }
 
     private void ViewCategory(CategoryDto category)
     {
-        // TODO: Implement view details
+        Snackbar.Add(Localization.IsArabic
+            ? $"عرض: {category.CategoryName}"
+            : $"Viewing: {category.CategoryName}", Severity.Info);
     }
 
     private async Task DeleteCategory(CategoryDto category)
     {
-        // TODO: Implement delete with confirmation
+        var confirmed = await DialogService.ShowMessageBox(
+            Localization.Get("common.delete"),
+            Localization.IsArabic
+                ? $"هل أنت متأكد من حذف '{category.CategoryName}'؟ لا يمكن التراجع عن هذا الإجراء."
+                : $"Are you sure you want to delete '{category.CategoryName}'? This action cannot be undone.",
+            yesText: Localization.Get("common.delete"),
+            cancelText: Localization.Get("common.cancel"));
+
+        if (confirmed != true) return;
+
+        try
+        {
+            var deleted = await ApiService.DeleteAsync($"/api/Categories/{category.CategoryId}");
+            if (deleted)
+            {
+                Snackbar.Add(Localization.IsArabic
+                    ? $"تم حذف التصنيف '{category.CategoryName}' بنجاح!"
+                    : $"Category '{category.CategoryName}' deleted successfully!", Severity.Success);
+                await LoadDataAsync();
+            }
+            else
+            {
+                Snackbar.Add(Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
     }
 
     public class CategoryDto

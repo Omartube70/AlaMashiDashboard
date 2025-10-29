@@ -1,0 +1,429 @@
+﻿@page "/profile"
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject TokenManagerService TokenManager
+@inject NavigationManager NavManager
+@using System.Text.RegularExpressions
+
+<PageTitle>Profile Settings - AlaMashi</PageTitle>
+
+<!-- Page Header -->
+<div class="page-header mb-4 fade-in">
+    <MudText Typo="Typo.h4" Class="font-weight-bold mb-2">
+        <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Class="mr-2" />
+        Profile Settings
+    </MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary">
+        Manage your account information and preferences
+    </MudText>
+</div>
+
+@if (isLoading)
+{
+    <MudCard Elevation="2">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center justify-center">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading profile...</MudText>
+            </div>
+        </MudCardContent>
+    </MudCard>
+}
+else if (userProfile != null)
+{
+    <MudGrid Spacing="3">
+        <!-- Personal Information -->
+        <MudItem xs="12" md="8">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Personal Information</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudStack Spacing="3">
+                        <MudTextField @bind-Value="userProfile.UserName"
+                                      Label="Username"
+                                      Variant="Variant.Outlined"
+                                      Disabled="true"
+                                      HelperText="Username cannot be changed" />
+
+                        <MudTextField @bind-Value="editForm.Email"
+                                      Label="Email"
+                                      Variant="Variant.Outlined"
+                                      InputType="InputType.Email"
+                                      Validation="@(new Func<string, IEnumerable<string>>(ValidateEmail))" />
+
+                        <MudTextField @bind-Value="editForm.Phone"
+                                      Label="Phone"
+                                      Variant="Variant.Outlined"
+                                      InputType="InputType.Text"
+                                      Validation="@(new Func<string, IEnumerable<string>>(ValidatePhone))" />
+
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">
+                            <strong>Role:</strong> @userProfile.UserRole
+                        </MudText>
+                    </MudStack>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Account Status -->
+        <MudItem xs="12" md="4">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Account Status</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudStack Spacing="2">
+                        <div class="d-flex justify-space-between align-center">
+                            <MudText Typo="Typo.body2">Status:</MudText>
+                            <MudChip Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small">
+                                Active
+                            </MudChip>
+                        </div>
+                        <MudDivider />
+                        <div class="d-flex justify-space-between align-center">
+                            <MudText Typo="Typo.body2">Member Since:</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @DateTime.Now.ToString("MMM dd, yyyy")
+                            </MudText>
+                        </div>
+                    </MudStack>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Change Password -->
+        <MudItem xs="12" md="8">
+            <MudCard Elevation="2">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">Change Password</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudStack Spacing="3">
+                        <MudTextField @bind-Value="passwordForm.CurrentPassword"
+                                      Label="Current Password"
+                                      Variant="Variant.Outlined"
+                                      InputType="@(showCurrentPassword? InputType.Text: InputType.Password)"
+                                      AdornmentIcon="@(showCurrentPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                      OnAdornmentClick="@((MouseEventArgs e) => showCurrentPassword = !showCurrentPassword)"
+                                      AdornmentPosition="AdornmentPosition.End" />
+
+                        <MudTextField @bind-Value="passwordForm.NewPassword"
+                                      Label="New Password"
+                                      Variant="Variant.Outlined"
+                                      InputType="@(showNewPassword? InputType.Text: InputType.Password)"
+                                      AdornmentIcon="@(showNewPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                      OnAdornmentClick="@((MouseEventArgs e) => showNewPassword = !showNewPassword)"
+                                      AdornmentPosition="AdornmentPosition.End"
+                                      HelperText="Min 8 characters with number and special char"
+                                      Validation="@(new Func<string, IEnumerable<string>>(ValidatePassword))" />
+
+                        <MudTextField @bind-Value="passwordForm.ConfirmPassword"
+                                      Label="Confirm Password"
+                                      Variant="Variant.Outlined"
+                                      InputType="@(showConfirmPassword? InputType.Text: InputType.Password)"
+                                      AdornmentIcon="@(showConfirmPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                      OnAdornmentClick="@((MouseEventArgs e) => showConfirmPassword = !showConfirmPassword)"
+                                      AdornmentPosition="AdornmentPosition.End" />
+                    </MudStack>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Action Buttons -->
+        <MudItem xs="12">
+            <div class="d-flex gap-2 justify-end">
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           OnClick="ResetForm">
+                    Cancel
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="UpdateProfile">
+                    Save Changes
+                </MudButton>
+            </div>
+        </MudItem>
+    </MudGrid>
+}
+else
+{
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center text-center">
+                <MudIcon Icon="@Icons.Material.Filled.ErrorOutline"
+                         Size="Size.Large"
+                         Color="Color.Error"
+                         Class="mb-4"
+                         Style="font-size: 5rem;" />
+                <MudText Typo="Typo.h6" Class="mb-2">Failed to Load Profile</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Unable to fetch your profile. Please try again.
+                </MudText>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="LoadProfileAsync">
+                    Retry
+                </MudButton>
+            </div>
+        </MudCardContent>
+    </MudCard>
+}
+
+<style>
+    .page-header {
+        animation: slideInDown 0.5s ease-out;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+</style>
+
+@code {
+    private bool isLoading = true;
+    private UserProfileDto userProfile = null!;
+    private EditProfileForm editForm = new();
+    private ChangePasswordForm passwordForm = new();
+    private bool showCurrentPassword, showNewPassword, showConfirmPassword;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await LoadProfileAsync();
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        try
+        {
+            isLoading = true;
+            var userId = await TokenManager.GetUserIdAsync();
+
+            if (userId == null)
+            {
+                NavManager.NavigateTo("/login");
+                return;
+            }
+
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<UserProfileDto>>(
+                $"/api/Users/{userId}");
+
+            userProfile = response?.Data;
+
+            if (userProfile != null)
+            {
+                editForm.Email = userProfile.Email;
+                editForm.Phone = userProfile.Phone;
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading profile: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateProfile()
+    {
+        try
+        {
+            // التحقق من أن هناك تغييرات فعلية
+            bool emailChanged = editForm.Email != userProfile?.Email;
+            bool phoneChanged = editForm.Phone != userProfile?.Phone;
+            bool passwordChanged = !string.IsNullOrWhiteSpace(passwordForm.CurrentPassword);
+
+            if (!emailChanged && !phoneChanged && !passwordChanged)
+            {
+                Snackbar.Add("No changes to save", Severity.Info);
+                return;
+            }
+
+            // التحقق من صحة البيانات المتغيرة
+            if (emailChanged)
+            {
+                var emailError = InputValidator.ValidateEmail(editForm.Email);
+                if (emailError != null)
+                {
+                    Snackbar.Add(emailError, Severity.Warning);
+                    return;
+                }
+            }
+
+            if (phoneChanged && !string.IsNullOrWhiteSpace(editForm.Phone))
+            {
+                var phoneError = ValidatePhone(editForm.Phone).FirstOrDefault();
+                if (phoneError != null)
+                {
+                    Snackbar.Add(phoneError, Severity.Warning);
+                    return;
+                }
+            }
+
+            var userId = await TokenManager.GetUserIdAsync();
+            if (userId == null)
+            {
+                Snackbar.Add("User ID not found", Severity.Error);
+                return;
+            }
+
+            // تحديث المعلومات الشخصية فقط إذا تغيرت
+            if (emailChanged || phoneChanged)
+            {
+                var updateRequest = new
+                {
+                    email = editForm.Email,
+                    phone = editForm.Phone
+                };
+
+                var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>(
+                    $"/api/Users/{userId}", updateRequest);
+
+                if (response == null)
+                {
+                    Snackbar.Add("Failed to update profile. Please check your data.", Severity.Error);
+                    return;
+                }
+
+                if (response.Success == false)
+                {
+                    Snackbar.Add(response.Message ?? "Failed to update profile", Severity.Error);
+                    return;
+                }
+
+                Snackbar.Add("✅ تم تحديث بيانات البروفايل بنجاح!", Severity.Success);
+            }
+
+            // تحديث كلمة المرور إذا تم ملء الحقول
+            if (passwordChanged)
+            {
+                if (passwordForm.NewPassword != passwordForm.ConfirmPassword)
+                {
+                    Snackbar.Add("Passwords do not match", Severity.Warning);
+                    return;
+                }
+
+                var passwordError = InputValidator.ValidatePassword(passwordForm.NewPassword);
+                if (passwordError != null)
+                {
+                    Snackbar.Add(passwordError, Severity.Warning);
+                    return;
+                }
+
+                var changePasswordRequest = new
+                {
+                    currentPassword = passwordForm.CurrentPassword,
+                    newPassword = passwordForm.NewPassword
+                };
+
+                var passwordResponse = await ApiService.PostAsync<ApiService.ApiResponse<object>>(
+                    "/api/Users/change-password", changePasswordRequest);
+
+                if (passwordResponse == null || passwordResponse.Success == false)
+                {
+                    Snackbar.Add(passwordResponse?.Message ?? "Failed to change password", Severity.Error);
+                    return;
+                }
+
+                Snackbar.Add("Password changed successfully!", Severity.Success);
+            }
+
+            ResetForm();
+            await LoadProfileAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error updating profile: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ResetForm()
+    {
+        if (userProfile != null)
+        {
+            editForm.Email = userProfile.Email;
+            editForm.Phone = userProfile.Phone;
+        }
+        passwordForm = new();
+        showCurrentPassword = showNewPassword = showConfirmPassword = false;
+    }
+
+    private IEnumerable<string> ValidateEmail(string email)
+    {
+        var error = InputValidator.ValidateEmail(email);
+        if (error != null)
+            yield return error;
+    }
+
+    private IEnumerable<string> ValidatePhone(string phone)
+    {
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            if (!Regex.IsMatch(phone, @"^\d{10,}$"))
+                yield return "Phone must be at least 10 digits";
+        }
+    }
+
+    private IEnumerable<string> ValidatePassword(string password)
+    {
+        var error = InputValidator.ValidatePassword(password);
+        if (error != null)
+            yield return error;
+    }
+
+    public class UserProfileDto
+    {
+        [JsonPropertyName("userId")] public int UserId { get; set; }
+        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
+        [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("phone")] public string Phone { get; set; } = string.Empty;
+        [JsonPropertyName("userRole")] public string UserRole { get; set; } = string.Empty;
+    }
+
+    public class EditProfileForm
+    {
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+    }
+
+    public class ChangePasswordForm
+    {
+        public string CurrentPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}
