@@ -1,23 +1,67 @@
 ﻿@page "/offers"
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
-<PageTitle>Offer Management</PageTitle>
+<PageTitle>Offers Management</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
-            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">🏷️ Offers Management</MudText>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="mr-2" />
+                Offers Management
+            </MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">Create and control discounts and promotional offers</MudText>
         </div>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="OpenAddDialog"
-                   Class="mt-2 mt-md-0 pulse-button">
-            Create Offer
-        </MudButton>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="LoadDataAsync">
+                Refresh
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.FileDownload"
+                       OnClick="ExportToCSV"
+                       Disabled="@(offersList == null || !offersList.Any())">
+                Export CSV
+            </MudButton>
+        </div>
     </div>
 </div>
+
+<!-- Filter Chips -->
+<MudPaper Class="pa-3 mb-4 slide-up" Elevation="1">
+    <div class="d-flex flex-wrap gap-2 align-center">
+        <MudText Typo="Typo.body2" Class="mr-2">Filter by Status:</MudText>
+        <MudChip Color="@(_statusFilter == null ? Color.Primary : Color.Default)"
+                 OnClick="@(() => FilterByStatus(null))"
+                 Size="Size.Small">
+            All (@(offersList?.Count ?? 0))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Active" ? Color.Success : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Active"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.CheckCircle">
+            Active (@GetStatusCount("Active"))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Upcoming" ? Color.Info : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Upcoming"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Schedule">
+            Upcoming (@GetStatusCount("Upcoming"))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Expired" ? Color.Default : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Expired"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Cancel">
+            Expired (@GetStatusCount("Expired"))
+        </MudChip>
+    </div>
+</MudPaper>
 
 @if (isLoading)
 {
@@ -38,7 +82,7 @@ else if (offersList != null && offersList.Any())
                       Hover="true"
                       Breakpoint="Breakpoint.Sm"
                       FixedHeader="true"
-                      Height="calc(100vh - 320px)"
+                      Height="calc(100vh - 400px)"
                       Class="custom-table">
 
                 <ToolBarContent>
@@ -53,15 +97,9 @@ else if (offersList != null && offersList.Any())
                                   Class="mr-2"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
-                    <MudTooltip Text="Refresh">
-                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
-                                       OnClick="LoadDataAsync"
-                                       Color="Color.Primary" />
-                    </MudTooltip>
-                    <MudTooltip Text="Filter">
-                        <MudIconButton Icon="@Icons.Material.Filled.FilterList"
-                                       Color="Color.Secondary" />
-                    </MudTooltip>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Showing <strong>@GetFilteredOffers().Count()</strong> of <strong>@offersList.Count</strong> offers
+                    </MudText>
                 </ToolBarContent>
 
                 <HeaderContent>
@@ -125,7 +163,10 @@ else if (offersList != null && offersList.Any())
                         </div>
                     </MudTd>
                     <MudTd DataLabel="Status">
-                        @if (DateTime.Now >= context.StartDate && DateTime.Now <= context.EndDate)
+                        @{
+                            var status = GetOfferStatus(context);
+                        }
+                        @if (status == "Active")
                         {
                             <MudChip Size="Size.Small"
                                      Color="Color.Success"
@@ -133,7 +174,7 @@ else if (offersList != null && offersList.Any())
                                 Active
                             </MudChip>
                         }
-                        else if (DateTime.Now < context.StartDate)
+                        else if (status == "Upcoming")
                         {
                             <MudChip Size="Size.Small"
                                      Color="Color.Info"
@@ -186,13 +227,13 @@ else if (offersList != null && offersList.Any())
                 Total: <strong>@offersList.Count</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Success">
-                Active: <strong>@offersList.Count(o => DateTime.Now >= o.StartDate && DateTime.Now <= o.EndDate)</strong>
+                Active: <strong>@GetStatusCount("Active")</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Info">
-                Upcoming: <strong>@offersList.Count(o => DateTime.Now < o.StartDate)</strong>
+                Upcoming: <strong>@GetStatusCount("Upcoming")</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Default">
-                Expired: <strong>@offersList.Count(o => DateTime.Now > o.EndDate)</strong>
+                Expired: <strong>@GetStatusCount("Expired")</strong>
             </MudText>
         </div>
     </MudPaper>
@@ -211,20 +252,12 @@ else
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
                     Create your first promotional offer to attract more customers.
                 </MudText>
-                <div class="d-flex gap-2">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               OnClick="OpenAddDialog"
-                               StartIcon="@Icons.Material.Filled.Add">
-                        Create Offer
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Secondary"
-                               OnClick="LoadDataAsync"
-                               StartIcon="@Icons.Material.Filled.Refresh">
-                        Retry
-                    </MudButton>
-                </div>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           OnClick="LoadDataAsync"
+                           StartIcon="@Icons.Material.Filled.Refresh">
+                    Retry
+                </MudButton>
             </div>
         </MudCardContent>
     </MudCard>
@@ -245,10 +278,6 @@ else
 
     .slide-up {
         animation: slideUp 0.5s ease-out;
-    }
-
-    .pulse-button {
-        animation: pulse 2s infinite;
     }
 
     .pulse-icon {
@@ -327,6 +356,7 @@ else
     private bool isLoading = true;
     private List<OfferDto>? offersList;
     private string _searchString = "";
+    private string? _statusFilter = null;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -340,29 +370,103 @@ else
         isLoading = true;
         StateHasChanged();
 
-        var offers = await ApiService.GetAsync<ApiService.ApiResponse<List<OfferDto>>>("/api/Offers/All");
-        offersList = offers?.Data;
-
-        isLoading = false;
-        StateHasChanged();
+        try
+        {
+            var offers = await ApiService.GetAsync<ApiService.ApiResponse<List<OfferDto>>>("/api/Offers/All");
+            offersList = offers?.Data;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading offers: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
     private IEnumerable<OfferDto> GetFilteredOffers()
     {
         if (offersList == null) return Enumerable.Empty<OfferDto>();
-        if (string.IsNullOrWhiteSpace(_searchString)) return offersList;
 
-        return offersList.Where(o =>
-            o.Title.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-            o.Description.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-            o.OfferID.ToString().Contains(_searchString)
-        );
+        var filtered = offersList.AsEnumerable();
+
+        if (_statusFilter != null)
+            filtered = filtered.Where(o => GetOfferStatus(o) == _statusFilter);
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+            filtered = filtered.Where(o =>
+                o.Title.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                o.Description.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                o.OfferID.ToString().Contains(_searchString));
+
+        return filtered;
     }
 
-    private void OpenAddDialog() { }
-    private void OpenEditDialog(OfferDto offer) { }
-    private void ViewOffer(OfferDto offer) { }
-    private async Task DeleteOffer(OfferDto offer) { }
+    private void FilterByStatus(string? status) => _statusFilter = status;
+
+    private string GetOfferStatus(OfferDto offer)
+    {
+        var now = DateTime.Now;
+        if (now >= offer.StartDate && now <= offer.EndDate)
+            return "Active";
+        else if (now < offer.StartDate)
+            return "Upcoming";
+        else
+            return "Expired";
+    }
+
+    private int GetStatusCount(string status)
+    {
+        if (offersList == null) return 0;
+        return offersList.Count(o => GetOfferStatus(o) == status);
+    }
+
+    private void ViewOffer(OfferDto offer)
+    {
+        Snackbar.Add($"Viewing details for: {offer.Title}", Severity.Info);
+    }
+
+    private void OpenEditDialog(OfferDto offer)
+    {
+        Snackbar.Add($"Edit feature for {offer.Title} - Coming soon", Severity.Info);
+    }
+
+    private async Task DeleteOffer(OfferDto offer)
+    {
+        try
+        {
+            await ApiService.DeleteAsync($"/api/Offers/{offer.OfferID}");
+            Snackbar.Add($"Offer '{offer.Title}' deleted successfully!", Severity.Success);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to delete offer: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ExportToCSV()
+    {
+        if (offersList == null || !offersList.Any()) return;
+
+        var filtered = GetFilteredOffers().ToList();
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("Offer ID,Title,Description,Discount %,Start Date,End Date,Status");
+
+        foreach (var offer in filtered)
+        {
+            var status = GetOfferStatus(offer);
+            csv.AppendLine($"{offer.OfferID},{offer.Title},{offer.Description},{offer.DiscountPercentage},{offer.StartDate:yyyy-MM-dd},{offer.EndDate:yyyy-MM-dd},{status}");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Offers_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
+
+        Snackbar.Add($"Exported {filtered.Count} offers successfully!", Severity.Success);
+    }
 
     public class OfferDto
     {

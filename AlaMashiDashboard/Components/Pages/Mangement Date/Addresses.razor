@@ -1,23 +1,67 @@
 ﻿@page "/addresses"
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
 
-<PageTitle>Address Management</PageTitle>
+<PageTitle>Addresses Management</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
-            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">📍 Address Management</MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">View and manage user delivery addresses</MudText>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.LocationOn" Class="mr-2" />
+                Addresses Management
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Manage all delivery addresses in the system</MudText>
         </div>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.AddLocation"
-                   OnClick="OpenAddDialog"
-                   Class="mt-2 mt-md-0 pulse-button">
-            Add Address
-        </MudButton>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="LoadDataAsync">
+                Refresh
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.FileDownload"
+                       OnClick="ExportToCSV"
+                       Disabled="@(addressesList == null || !addressesList.Any())">
+                Export CSV
+            </MudButton>
+        </div>
     </div>
 </div>
+
+<!-- Filter Chips -->
+<MudPaper Class="pa-3 mb-4 slide-up" Elevation="1">
+    <div class="d-flex flex-wrap gap-2 align-center">
+        <MudText Typo="Typo.body2" Class="mr-2">Filter by Type:</MudText>
+        <MudChip Color="@(_typeFilter == null ? Color.Primary : Color.Default)"
+                 OnClick="@(() => FilterByType(null))"
+                 Size="Size.Small">
+            All (@(addressesList?.Count ?? 0))
+        </MudChip>
+        <MudChip Color="@(_typeFilter == "home" ? Color.Info : Color.Default)"
+                 OnClick="@(() => FilterByType("home"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Home">
+            Home (@GetTypeCount("home"))
+        </MudChip>
+        <MudChip Color="@(_typeFilter == "work" ? Color.Warning : Color.Default)"
+                 OnClick="@(() => FilterByType("work"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Work">
+            Work (@GetTypeCount("work"))
+        </MudChip>
+        <MudChip Color="@(_typeFilter == "other" ? Color.Secondary : Color.Default)"
+                 OnClick="@(() => FilterByType("other"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Place">
+            Other (@GetTypeCount("other"))
+        </MudChip>
+    </div>
+</MudPaper>
 
 @if (isLoading)
 {
@@ -38,7 +82,7 @@ else if (addressesList != null && addressesList.Any())
                       Hover="true"
                       Breakpoint="Breakpoint.Sm"
                       FixedHeader="true"
-                      Height="calc(100vh - 320px)"
+                      Height="calc(100vh - 400px)"
                       Class="custom-table">
 
                 <ToolBarContent>
@@ -53,80 +97,52 @@ else if (addressesList != null && addressesList.Any())
                                   Class="mr-2"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
-                    <MudTooltip Text="Refresh">
-                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
-                                       OnClick="LoadDataAsync"
-                                       Color="Color.Primary" />
-                    </MudTooltip>
-                    <MudTooltip Text="Filter">
-                        <MudIconButton Icon="@Icons.Material.Filled.FilterList"
-                                       Color="Color.Secondary" />
-                    </MudTooltip>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Showing <strong>@GetFilteredAddresses().Count()</strong> of <strong>@addressesList.Count</strong> addresses
+                    </MudText>
                 </ToolBarContent>
 
                 <HeaderContent>
-                    <MudTh>
-                        <MudTableSortLabel SortBy="new Func<AddressDto, object>(x => x.AddressId)">
-                            ID
-                        </MudTableSortLabel>
-                    </MudTh>
-                    <MudTh>Location</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<AddressDto, object>(x => x.AddressId)">ID</MudTableSortLabel></MudTh>
+                    <MudTh>User</MudTh>
+                    <MudTh>City</MudTh>
+                    <MudTh>Street</MudTh>
                     <MudTh>Details</MudTh>
                     <MudTh>Type</MudTh>
-                    <MudTh>User ID</MudTh>
                     <MudTh Style="text-align: right;">Actions</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
                     <MudTd DataLabel="ID">
-                        <MudChip Size="Size.Small" Color="Color.Default">@context.AddressId</MudChip>
+                        <MudChip Size="Size.Small" Color="Color.Default">#@context.AddressId</MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Location">
+                    <MudTd DataLabel="User">
                         <div class="d-flex align-center">
-                            <MudIcon Icon="@Icons.Material.Filled.LocationOn"
-                                     Color="Color.Error"
-                                     Size="Size.Small"
-                                     Class="mr-2" />
-                            <div>
-                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.Street</MudText>
-                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.City</MudText>
-                            </div>
+                            <MudAvatar Size="Size.Small" Color="Color.Primary" Class="mr-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
+                            </MudAvatar>
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">User #@context.UserId</MudText>
                         </div>
+                    </MudTd>
+                    <MudTd DataLabel="City">
+                        <div class="d-flex align-center">
+                            <MudIcon Icon="@Icons.Material.Filled.LocationCity" Size="Size.Small" Color="Color.Info" Class="mr-1" />
+                            <MudText Typo="Typo.body2">@context.City</MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Street">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@context.Street</MudText>
                     </MudTd>
                     <MudTd DataLabel="Details">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            @(context.AddressDetails.Length > 40 ? context.AddressDetails.Substring(0, 40) + "..." : context.AddressDetails)
+                            @(context.AddressDetails.Length > 30 ? context.AddressDetails.Substring(0, 30) + "..." : context.AddressDetails)
                         </MudText>
                     </MudTd>
                     <MudTd DataLabel="Type">
-                        @if (context.AddressType.ToLower() == "home")
-                        {
-                            <MudChip Size="Size.Small"
-                                     Color="Color.Success"
-                                     Icon="@Icons.Material.Filled.Home">
-                                Home
-                            </MudChip>
-                        }
-                        else if (context.AddressType.ToLower() == "work")
-                        {
-                            <MudChip Size="Size.Small"
-                                     Color="Color.Info"
-                                     Icon="@Icons.Material.Filled.Business">
-                                Work
-                            </MudChip>
-                        }
-                        else
-                        {
-                            <MudChip Size="Size.Small"
-                                     Color="Color.Default"
-                                     Icon="@Icons.Material.Filled.Place">
-                                @context.AddressType
-                            </MudChip>
-                        }
-                    </MudTd>
-                    <MudTd DataLabel="User ID">
-                        <MudChip Size="Size.Small" Color="Color.Primary" Icon="@Icons.Material.Filled.Person">
-                            @context.UserId
+                        <MudChip Size="Size.Small"
+                                 Color="@GetTypeColor(context.AddressType)"
+                                 Icon="@GetTypeIcon(context.AddressType)">
+                            @FormatType(context.AddressType)
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="Actions" Style="text-align: right;">
@@ -140,7 +156,7 @@ else if (addressesList != null && addressesList.Any())
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Size="Size.Small"
                                            Color="Color.Info"
-                                           OnClick="@(() => OpenEditDialog(context))" />
+                                           OnClick="@(() => EditAddress(context))" />
                         </MudTooltip>
                         <MudTooltip Text="Delete">
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
@@ -160,17 +176,26 @@ else if (addressesList != null && addressesList.Any())
 
     <!-- Stats Footer -->
     <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
-        <div class="d-flex justify-space-between align-center flex-wrap gap-2">
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Total: <strong>@addressesList.Count</strong>
-            </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Success">
-                Home: <strong>@addressesList.Count(a => a.AddressType.ToLower() == "home")</strong>
-            </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Info">
-                Work: <strong>@addressesList.Count(a => a.AddressType.ToLower() == "work")</strong>
-            </MudText>
-        </div>
+        <MudGrid>
+            <MudItem xs="6" sm="4">
+                <MudText Typo="Typo.body2" Color="Color.Info">
+                    <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small" Class="mr-1" />
+                    Home: <strong>@GetTypeCount("home")</strong>
+                </MudText>
+            </MudItem>
+            <MudItem xs="6" sm="4">
+                <MudText Typo="Typo.body2" Color="Color.Warning">
+                    <MudIcon Icon="@Icons.Material.Filled.Work" Size="Size.Small" Class="mr-1" />
+                    Work: <strong>@GetTypeCount("work")</strong>
+                </MudText>
+            </MudItem>
+            <MudItem xs="12" sm="4">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Class="mr-1" />
+                    Other: <strong>@GetTypeCount("other")</strong>
+                </MudText>
+            </MudItem>
+        </MudGrid>
     </MudPaper>
 }
 else
@@ -185,22 +210,14 @@ else
                          Style="font-size: 5rem;" />
                 <MudText Typo="Typo.h6" Class="mb-2">No Addresses Found</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Start by adding delivery addresses for users.
+                    Delivery addresses will appear here once users add them.
                 </MudText>
-                <div class="d-flex gap-2">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               OnClick="OpenAddDialog"
-                               StartIcon="@Icons.Material.Filled.AddLocation">
-                        Add Address
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Secondary"
-                               OnClick="LoadDataAsync"
-                               StartIcon="@Icons.Material.Filled.Refresh">
-                        Retry
-                    </MudButton>
-                </div>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           OnClick="LoadDataAsync"
+                           StartIcon="@Icons.Material.Filled.Refresh">
+                    Retry
+                </MudButton>
             </div>
         </MudCardContent>
     </MudCard>
@@ -223,10 +240,6 @@ else
         animation: slideUp 0.5s ease-out;
     }
 
-    .pulse-button {
-        animation: pulse 2s infinite;
-    }
-
     .pulse-icon {
         animation: pulse 3s infinite;
     }
@@ -238,7 +251,7 @@ else
     }
 
     ::deep .mud-table-row:hover {
-        background-color: rgba(239, 68, 68, 0.05) !important;
+        background-color: rgba(22, 163, 74, 0.05) !important;
         transform: scale(1.01);
     }
 
@@ -303,6 +316,7 @@ else
     private bool isLoading = true;
     private List<AddressDto>? addressesList;
     private string _searchString = "";
+    private string? _typeFilter = null;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -312,35 +326,108 @@ else
 
     private async Task LoadDataAsync()
     {
-        addressesList = null;
         isLoading = true;
         StateHasChanged();
 
-        var addresses = await ApiService.GetAsync<ApiService.ApiResponse<List<AddressDto>>>("/api/Addresses/all");
-        addressesList = addresses?.Data;
-
-        isLoading = false;
-        StateHasChanged();
+        try
+        {
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<List<AddressDto>>>("/api/Addresses/all");
+            addressesList = response?.Data;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading addresses: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
     private IEnumerable<AddressDto> GetFilteredAddresses()
     {
         if (addressesList == null) return Enumerable.Empty<AddressDto>();
-        if (string.IsNullOrWhiteSpace(_searchString)) return addressesList;
 
-        return addressesList.Where(a =>
-            a.Street.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-            a.City.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-            a.AddressDetails.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-            a.AddressType.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
-            a.AddressId.ToString().Contains(_searchString)
-        );
+        var filtered = addressesList.AsEnumerable();
+
+        if (_typeFilter != null)
+            filtered = filtered.Where(a => a.AddressType.Equals(_typeFilter, StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+            filtered = filtered.Where(a =>
+                a.AddressId.ToString().Contains(_searchString) ||
+                a.City.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                a.Street.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                a.AddressDetails.Contains(_searchString, StringComparison.OrdinalIgnoreCase));
+
+        return filtered;
     }
 
-    private void OpenAddDialog() { }
-    private void OpenEditDialog(AddressDto address) { }
-    private void ViewOnMap(AddressDto address) { }
-    private async Task DeleteAddress(AddressDto address) { }
+    private void FilterByType(string? type) => _typeFilter = type;
+
+    private int GetTypeCount(string type) => addressesList?.Count(a => a.AddressType.Equals(type, StringComparison.OrdinalIgnoreCase)) ?? 0;
+
+    private Color GetTypeColor(string type) => type.ToLower() switch
+    {
+        "home" => Color.Info,
+        "work" => Color.Warning,
+        _ => Color.Secondary
+    };
+
+    private string GetTypeIcon(string type) => type.ToLower() switch
+    {
+        "home" => Icons.Material.Filled.Home,
+        "work" => Icons.Material.Filled.Work,
+        _ => Icons.Material.Filled.Place
+    };
+
+    private string FormatType(string type) =>
+        type.Length > 0 ? char.ToUpper(type[0]) + type.Substring(1).ToLower() : type;
+
+    private void ViewOnMap(AddressDto address)
+    {
+        Snackbar.Add($"Opening map for: {address.City}, {address.Street}", Severity.Info);
+    }
+
+    private void EditAddress(AddressDto address)
+    {
+        Snackbar.Add($"Edit feature for Address #{address.AddressId} - Coming soon", Severity.Info);
+    }
+
+    private async Task DeleteAddress(AddressDto address)
+    {
+        try
+        {
+            await ApiService.DeleteAsync($"/api/Addresses/{address.AddressId}");
+            Snackbar.Add($"Address #{address.AddressId} deleted successfully!", Severity.Success);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to delete address: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ExportToCSV()
+    {
+        if (addressesList == null || !addressesList.Any()) return;
+
+        var filtered = GetFilteredAddresses().ToList();
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("Address ID,User ID,City,Street,Details,Type");
+
+        foreach (var address in filtered)
+        {
+            csv.AppendLine($"{address.AddressId},{address.UserId},{address.City},{address.Street},{address.AddressDetails},{address.AddressType}");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Addresses_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
+
+        Snackbar.Add($"Exported {filtered.Count} addresses successfully!", Severity.Success);
+    }
 
     public class AddressDto
     {

@@ -203,6 +203,43 @@ public class ApiService
         return result != null;
     }
 
+    // ------------------- DELETE API Call -------------------
+    public async Task<bool> DeleteAsync(string url)
+    {
+        var token = await _tokenManager.GetAccessTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            _navManager.NavigateTo("/login");
+            return false;
+        }
+
+        var client = _httpClientFactory.CreateClient("Api");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            var response = await client.DeleteAsync(url);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                bool refreshed = await RefreshTokenAsync();
+
+                if (refreshed)
+                    return await DeleteAsync(url);
+
+                _navManager.NavigateTo("/login");
+                return false;
+            }
+
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"DELETE exception: {ex.Message}");
+            return false;
+        }
+    }
+
 
     // ------------------- Classes -------------------
     public class LoginCommand

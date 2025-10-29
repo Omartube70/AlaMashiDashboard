@@ -1,4 +1,8 @@
 ﻿@page "/users"
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@inject IDialogService DialogService
 
 <PageTitle>User Management</PageTitle>
 
@@ -6,16 +10,27 @@
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
-            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">👥 User Management</MudText>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.People" Class="mr-2" />
+                User Management
+            </MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">Manage and view all registered users in the system</MudText>
         </div>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Primary"
-                   StartIcon="@Icons.Material.Filled.PersonAdd"
-                   OnClick="OpenAddDialog"
-                   Class="mt-2 mt-md-0 pulse-button">
-            Add User
-        </MudButton>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="LoadDataAsync">
+                Refresh
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.FileDownload"
+                       OnClick="ExportToCSV"
+                       Disabled="@(usersList == null || !usersList.Any())">
+                Export CSV
+            </MudButton>
+        </div>
     </div>
 </div>
 
@@ -53,15 +68,9 @@ else if (usersList != null && usersList.Any())
                                   Class="mr-2"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
-                    <MudTooltip Text="Refresh">
-                        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
-                                       OnClick="LoadDataAsync"
-                                       Color="Color.Primary" />
-                    </MudTooltip>
-                    <MudTooltip Text="Export">
-                        <MudIconButton Icon="@Icons.Material.Filled.FileDownload"
-                                       Color="Color.Secondary" />
-                    </MudTooltip>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Showing <strong>@GetFilteredUsers().Count()</strong> of <strong>@usersList.Count</strong> users
+                    </MudText>
                 </ToolBarContent>
 
                 <HeaderContent>
@@ -77,6 +86,7 @@ else if (usersList != null && usersList.Any())
                     </MudTh>
                     <MudTh>Email</MudTh>
                     <MudTh>Phone</MudTh>
+                    <MudTh>Role</MudTh>
                     <MudTh Style="text-align: right;">Actions</MudTh>
                 </HeaderContent>
 
@@ -86,7 +96,7 @@ else if (usersList != null && usersList.Any())
                     </MudTd>
                     <MudTd DataLabel="Username">
                         <div class="d-flex align-center">
-                            <MudAvatar Size="Size.Small" Color="Color.Primary" Class="mr-2">
+                            <MudAvatar Size="Size.Small" Color="@(context.IsAdmin? Color.Error: Color.Primary)" Class="mr-2">
                                 @context.UserName.Substring(0, 1).ToUpper()
                             </MudAvatar>
                             <MudText Typo="Typo.body2" Class="font-weight-medium">@context.UserName</MudText>
@@ -104,6 +114,24 @@ else if (usersList != null && usersList.Any())
                             <MudText Typo="Typo.body2" Color="Color.Secondary">@context.Phone</MudText>
                         </div>
                     </MudTd>
+                    <MudTd DataLabel="Role">
+                        @if (context.IsAdmin)
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Error"
+                                     Icon="@Icons.Material.Filled.AdminPanelSettings">
+                                Admin
+                            </MudChip>
+                        }
+                        else
+                        {
+                            <MudChip Size="Size.Small"
+                                     Color="Color.Default"
+                                     Icon="@Icons.Material.Filled.Person">
+                                User
+                            </MudChip>
+                        }
+                    </MudTd>
                     <MudTd DataLabel="Actions" Style="text-align: right;">
                         <MudTooltip Text="View Details">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
@@ -111,6 +139,15 @@ else if (usersList != null && usersList.Any())
                                            Color="Color.Default"
                                            OnClick="@(() => ViewUser(context))" />
                         </MudTooltip>
+                        @if (!context.IsAdmin)
+                        {
+                            <MudTooltip Text="Promote to Admin">
+                                <MudIconButton Icon="@Icons.Material.Filled.AdminPanelSettings"
+                                               Size="Size.Small"
+                                               Color="Color.Warning"
+                                               OnClick="@(() => PromoteToAdmin(context))" />
+                            </MudTooltip>
+                        }
                         <MudTooltip Text="Edit">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Size="Size.Small"
@@ -140,9 +177,13 @@ else if (usersList != null && usersList.Any())
                 <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Small" Class="mr-1" />
                 Total Users: <strong>@usersList.Count</strong>
             </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" Class="mr-1" />
-                Showing: <strong>@GetFilteredUsers().Count()</strong>
+            <MudText Typo="Typo.body2" Color="Color.Error">
+                <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Small" Class="mr-1" />
+                Admins: <strong>@usersList.Count(u => u.IsAdmin)</strong>
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Primary">
+                <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="mr-1" />
+                Regular Users: <strong>@usersList.Count(u => !u.IsAdmin)</strong>
             </MudText>
         </div>
     </MudPaper>
@@ -161,20 +202,12 @@ else
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
                     Start by adding your first user to the system.
                 </MudText>
-                <div class="d-flex gap-2">
-                    <MudButton Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               OnClick="OpenAddDialog"
-                               StartIcon="@Icons.Material.Filled.PersonAdd">
-                        Add User
-                    </MudButton>
-                    <MudButton Variant="Variant.Outlined"
-                               Color="Color.Secondary"
-                               OnClick="LoadDataAsync"
-                               StartIcon="@Icons.Material.Filled.Refresh">
-                        Retry
-                    </MudButton>
-                </div>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           OnClick="LoadDataAsync"
+                           StartIcon="@Icons.Material.Filled.Refresh">
+                    Retry
+                </MudButton>
             </div>
         </MudCardContent>
     </MudCard>
@@ -195,10 +228,6 @@ else
 
     .slide-up {
         animation: slideUp 0.5s ease-out;
-    }
-
-    .pulse-button {
-        animation: pulse 2s infinite;
     }
 
     .pulse-icon {
@@ -290,11 +319,20 @@ else
         isLoading = true;
         StateHasChanged();
 
-        var usersL = await ApiService.GetAsync<ApiService.ApiResponse<List<UserDto>>>("/api/Users/all");
-        usersList = usersL?.Data;
-
-        isLoading = false;
-        StateHasChanged();
+        try
+        {
+            var usersL = await ApiService.GetAsync<ApiService.ApiResponse<List<UserDto>>>("/api/Users/all");
+            usersList = usersL?.Data;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading users: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
     }
 
     private IEnumerable<UserDto> GetFilteredUsers()
@@ -310,10 +348,90 @@ else
         );
     }
 
-    private void OpenAddDialog() { }
-    private void OpenEditDialog(UserDto user) { }
-    private void ViewUser(UserDto user) { }
-    private async Task DeleteUser(UserDto user) { }
+    private async Task PromoteToAdmin(UserDto user)
+    {
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = $"Are you sure you want to promote '{user.UserName}' to Admin? This will grant them full administrative privileges.",
+            ["ButtonText"] = "Promote",
+            ["Color"] = Color.Warning
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Promote to Admin", parameters, options);
+        var result = await dialog.Result;
+
+        if (result.Canceled) return;
+
+        try
+        {
+            var response = await ApiService.PostAsync<object>($"/api/Users/{user.UserId}/promote-to-admin", null);
+
+            Snackbar.Add($"User '{user.UserName}' has been promoted to Admin successfully!", Severity.Success);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to promote user: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void ViewUser(UserDto user)
+    {
+        Snackbar.Add($"Viewing details for {user.UserName}", Severity.Info);
+    }
+
+    private void OpenEditDialog(UserDto user)
+    {
+        Snackbar.Add($"Edit feature for {user.UserName} - Coming soon", Severity.Info);
+    }
+
+    private async Task DeleteUser(UserDto user)
+    {
+        var parameters = new DialogParameters
+        {
+            ["ContentText"] = $"Are you sure you want to delete user '{user.UserName}'? This action cannot be undone.",
+            ["ButtonText"] = "Delete",
+            ["Color"] = Color.Error
+        };
+
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Small };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Delete User", parameters, options);
+        var result = await dialog.Result;
+
+        if (result.Canceled) return;
+
+        try
+        {
+            await ApiService.DeleteAsync($"/api/Users/{user.UserId}");
+            Snackbar.Add($"User '{user.UserName}' has been deleted successfully!", Severity.Success);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Failed to delete user: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ExportToCSV()
+    {
+        if (usersList == null || !usersList.Any()) return;
+
+        var filtered = GetFilteredUsers().ToList();
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("User ID,Username,Email,Phone,Role");
+
+        foreach (var user in filtered)
+        {
+            csv.AppendLine($"{user.UserId},{user.UserName},{user.Email},{user.Phone},{(user.IsAdmin ? "Admin" : "User")}");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Users_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
+
+        Snackbar.Add($"Exported {filtered.Count} users successfully!", Severity.Success);
+    }
 
     public class UserDto
     {
@@ -321,5 +439,22 @@ else
         [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
         [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
         [JsonPropertyName("phone")] public string Phone { get; set; } = string.Empty;
+        [JsonPropertyName("isAdmin")] public bool IsAdmin { get; set; }
+    }
+}
+
+@* Confirm Dialog Component *@
+@code {
+    public class ConfirmDialog : ComponentBase
+    {
+        [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+        [Parameter] public string ContentText { get; set; } = string.Empty;
+        [Parameter] public string ButtonText { get; set; } = "Confirm";
+        [Parameter] public Color Color { get; set; } = Color.Primary;
+
+        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
+        {
+            // Dialog will be rendered by MudBlazor
+        }
     }
 }

@@ -105,6 +105,20 @@
                         Icon="@Icons.Material.Filled.LocationOn">
                 Addresses
             </MudNavLink>
+
+            <MudDivider Class="my-2" />
+
+            <!-- ✨ NEW: Orders Section -->
+            <MudNavLink Href="/orders"
+                        Icon="@Icons.Material.Filled.ShoppingCart">
+                Orders
+            </MudNavLink>
+
+            <!-- ✨ NEW: Payments Section -->
+            <MudNavLink Href="/payments"
+                        Icon="@Icons.Material.Filled.Payment">
+                Payments
+            </MudNavLink>
         </MudNavMenu>
 
         <!-- Footer في الـ Drawer -->
@@ -166,7 +180,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Subscribe to username changes
         TokenManager.OnUserNameChanged += async () =>
         {
             _userName = await TokenManager.GetUserNameAsync() ?? "User";
@@ -195,7 +208,6 @@
         }
         catch
         {
-            // Default to desktop if JS fails
             _isMobile = false;
             _drawerVariant = DrawerVariant.Mini;
             _drawerOpen = true;
@@ -207,17 +219,17 @@
     {
         _isMobile = width < 960;
 
-        if (width < 960) // Mobile & Tablet
+        if (width < 960)
         {
             _drawerVariant = DrawerVariant.Temporary;
             _drawerOpen = false;
         }
-        else if (width < 1280) // Small Desktop
+        else if (width < 1280)
         {
             _drawerVariant = DrawerVariant.Mini;
             _drawerOpen = true;
         }
-        else // Large Desktop
+        else
         {
             _drawerVariant = DrawerVariant.Persistent;
             _drawerOpen = true;

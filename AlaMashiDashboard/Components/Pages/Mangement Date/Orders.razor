@@ -1,0 +1,495 @@
+﻿@page "/orders"
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@inject IDialogService DialogService
+
+<PageTitle>Orders Management</PageTitle>
+
+<!-- Page Header -->
+<div class="page-header mb-4 slide-in">
+    <div class="d-flex justify-space-between align-center flex-wrap">
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Class="mr-2" />
+                Orders Management
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Track and manage all customer orders</MudText>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="LoadDataAsync">
+                Refresh
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.FileDownload"
+                       OnClick="ExportToCSV"
+                       Disabled="@(ordersList == null || !ordersList.Any())">
+                Export CSV
+            </MudButton>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Chips -->
+<MudPaper Class="pa-3 mb-4 slide-up" Elevation="1">
+    <div class="d-flex flex-wrap gap-2 align-center">
+        <MudText Typo="Typo.body2" Class="mr-2">Filter by Status:</MudText>
+        <MudChip Color="@(_statusFilter == null ? Color.Primary : Color.Default)"
+                 OnClick="@(() => FilterByStatus(null))"
+                 Size="Size.Small">
+            All (@(ordersList?.Count ?? 0))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Pending" ? Color.Warning : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Pending"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Schedule">
+            Pending (@GetStatusCount("Pending"))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "InPreparation" ? Color.Info : Color.Default)"
+                 OnClick="@(() => FilterByStatus("InPreparation"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Inventory">
+            In Preparation (@GetStatusCount("InPreparation"))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "OutForDelivery" ? Color.Secondary : Color.Default)"
+                 OnClick="@(() => FilterByStatus("OutForDelivery"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.LocalShipping">
+            Out for Delivery (@GetStatusCount("OutForDelivery"))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Delivered" ? Color.Success : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Delivered"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.CheckCircle">
+            Delivered (@GetStatusCount("Delivered"))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Canceled" ? Color.Error : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Canceled"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Cancel">
+            Canceled (@GetStatusCount("Canceled"))
+        </MudChip>
+    </div>
+</MudPaper>
+
+@if (isLoading)
+{
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent>
+            <div class="d-flex flex-column justify-center align-center pa-8">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading orders...</MudText>
+            </div>
+        </MudCardContent>
+    </MudCard>
+}
+else if (ordersList != null && ordersList.Any())
+{
+    <MudCard Elevation="2" Class="data-table-card fade-in">
+        <MudCardContent Class="pa-0">
+            <MudTable Items="@GetFilteredOrders()"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      FixedHeader="true"
+                      Height="calc(100vh - 400px)"
+                      Class="custom-table">
+
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString"
+                                  Placeholder="Search orders..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mr-2"
+                                  Style="max-width: 400px;" />
+                    <MudSpacer />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Showing <strong>@GetFilteredOrders().Count()</strong> of <strong>@ordersList.Count</strong> orders
+                    </MudText>
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<OrderDto, object>(x => x.OrderId)">Order ID</MudTableSortLabel></MudTh>
+                    <MudTh>Customer</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<OrderDto, object>(x => x.TotalAmount)">Total</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<OrderDto, object>(x => x.OrderDate)">Order Date</MudTableSortLabel></MudTh>
+                    <MudTh>Delivery Date</MudTh>
+                    <MudTh>Status</MudTh>
+                    <MudTh Style="text-align: right;">Actions</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="Order ID">
+                        <MudChip Size="Size.Small" Color="Color.Primary">#@context.OrderId</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Customer">
+                        <div class="d-flex align-center">
+                            <MudAvatar Size="Size.Small" Color="Color.Info" Class="mr-2">
+                                @context.UserName?.Substring(0, 1).ToUpper()
+                            </MudAvatar>
+                            <div>
+                                <MudText Typo="Typo.body2" Class="font-weight-medium">@context.UserName</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                    <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
+                                    @context.UserPhone
+                                </MudText>
+                            </div>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Total">
+                        <MudChip Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.AttachMoney">
+                            @context.TotalAmount.ToString("N2") EGP
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Order Date">
+                        <MudText Typo="Typo.body2">@context.OrderDate.ToString("dd MMM yyyy")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.OrderDate.ToString("hh:mm tt")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Delivery Date">
+                        <MudText Typo="Typo.body2">@context.DeliveryDate.ToString("dd MMM yyyy")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.DeliveryTimeSlot</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip Size="Size.Small"
+                                 Color="@GetStatusColor(context.Status)"
+                                 Icon="@GetStatusIcon(context.Status)">
+                            @FormatStatus(context.Status)
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Actions" Style="text-align: right;">
+                        <MudTooltip Text="View Details">
+                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                           Size="Size.Small"
+                                           Color="Color.Default"
+                                           OnClick="@(() => ViewOrderDetails(context.OrderId))" />
+                        </MudTooltip>
+                        @if (context.Status != "Delivered" && context.Status != "Canceled")
+                        {
+                            <MudTooltip Text="Update Status">
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                               Size="Size.Small"
+                                               Color="Color.Info"
+                                               OnClick="@(() => ShowUpdateStatusDialog(context))" />
+                            </MudTooltip>
+                        }
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Stats Footer -->
+    <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
+        <MudGrid>
+            <MudItem xs="6" sm="3">
+                <MudText Typo="Typo.body2" Color="Color.Warning">
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Class="mr-1" />
+                    Pending: <strong>@GetStatusCount("Pending")</strong>
+                </MudText>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudText Typo="Typo.body2" Color="Color.Info">
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="mr-1" />
+                    In Preparation: <strong>@GetStatusCount("InPreparation")</strong>
+                </MudText>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Size="Size.Small" Class="mr-1" />
+                    Out for Delivery: <strong>@GetStatusCount("OutForDelivery")</strong>
+                </MudText>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudText Typo="Typo.body2" Color="Color.Success">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                    Delivered: <strong>@GetStatusCount("Delivered")</strong>
+                </MudText>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+}
+else
+{
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center text-center">
+                <MudIcon Icon="@Icons.Material.Filled.ShoppingCartCheckout"
+                         Size="Size.Large"
+                         Color="Color.Secondary"
+                         Class="mb-4 pulse-icon"
+                         Style="font-size: 5rem;" />
+                <MudText Typo="Typo.h6" Class="mb-2">No Orders Found</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Orders will appear here once customers start placing them.
+                </MudText>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           OnClick="LoadDataAsync"
+                           StartIcon="@Icons.Material.Filled.Refresh">
+                    Retry
+                </MudButton>
+            </div>
+        </MudCardContent>
+    </MudCard>
+}
+
+<style>
+    .page-header { animation: slideInDown 0.5s ease-out; }
+    .fade-in { animation: fadeIn 0.5s ease-in; }
+    .slide-in { animation: slideInLeft 0.5s ease-out; }
+    .slide-up { animation: slideUp 0.5s ease-out; }
+    .pulse-icon { animation: pulse 3s infinite; }
+    .data-table-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+    ::deep .mud-table-row:hover {
+        background-color: rgba(22, 163, 74, 0.05) !important;
+        transform: scale(1.01);
+    }
+    @@keyframes slideInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+    @@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @@keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
+    @@keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    @@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+</style>
+
+@code {
+    private bool isLoading = true;
+    private List<OrderDto>? ordersList;
+    private string _searchString = "";
+    private string? _statusFilter = null;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<List<OrderDto>>>("/api/Orders/all");
+            ordersList = response?.Data;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading orders: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<OrderDto> GetFilteredOrders()
+    {
+        if (ordersList == null) return Enumerable.Empty<OrderDto>();
+
+        var filtered = ordersList.AsEnumerable();
+
+        if (_statusFilter != null)
+            filtered = filtered.Where(o => o.Status == _statusFilter);
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+            filtered = filtered.Where(o =>
+                o.OrderId.ToString().Contains(_searchString) ||
+                o.UserName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                o.UserPhone.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                o.Status.Contains(_searchString, StringComparison.OrdinalIgnoreCase));
+
+        return filtered;
+    }
+
+    private void FilterByStatus(string? status) => _statusFilter = status;
+
+    private int GetStatusCount(string status) => ordersList?.Count(o => o.Status == status) ?? 0;
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Pending" => Color.Warning,
+        "InPreparation" => Color.Info,
+        "OutForDelivery" => Color.Secondary,
+        "Delivered" => Color.Success,
+        "Canceled" => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetStatusIcon(string status) => status switch
+    {
+        "Pending" => Icons.Material.Filled.Schedule,
+        "InPreparation" => Icons.Material.Filled.Inventory,
+        "OutForDelivery" => Icons.Material.Filled.LocalShipping,
+        "Delivered" => Icons.Material.Filled.CheckCircle,
+        "Canceled" => Icons.Material.Filled.Cancel,
+        _ => Icons.Material.Filled.Info
+    };
+
+    private string FormatStatus(string status) => status switch
+    {
+        "InPreparation" => "In Preparation",
+        "OutForDelivery" => "Out for Delivery",
+        _ => status
+    };
+
+    private async Task ShowUpdateStatusDialog(OrderDto order)
+    {
+        var statuses = new[] { "Pending", "InPreparation", "OutForDelivery", "Delivered" };
+        var currentIndex = Array.IndexOf(statuses, order.Status);
+
+        if (currentIndex >= statuses.Length - 1)
+        {
+            Snackbar.Add("Order is already at final status", Severity.Info);
+            return;
+        }
+
+        var parameters = new DialogParameters
+        {
+            ["OrderId"] = order.OrderId,
+            ["CurrentStatus"] = order.Status,
+            ["NextStatus"] = statuses[currentIndex + 1]
+        };
+
+        var dialog = await DialogService.ShowAsync<UpdateStatusDialog>("Update Order Status", parameters);
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            await LoadDataAsync();
+        }
+    }
+
+    private async Task ViewOrderDetails(int orderId)
+    {
+        try
+        {
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<OrderDetailsDto>>($"/api/Orders/{orderId}");
+
+            if (response?.Data != null)
+            {
+                var parameters = new DialogParameters { ["OrderDetails"] = response.Data };
+                await DialogService.ShowAsync<OrderDetailsDialog>("Order Details", parameters, new DialogOptions
+                {
+                    MaxWidth = MaxWidth.Medium,
+                    FullWidth = true
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading order details: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ExportToCSV()
+    {
+        if (ordersList == null || !ordersList.Any()) return;
+
+        var filtered = GetFilteredOrders().ToList();
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("Order ID,Customer,Phone,Total Amount,Order Date,Delivery Date,Time Slot,Status,City");
+
+        foreach (var order in filtered)
+        {
+            csv.AppendLine($"{order.OrderId},{order.UserName},{order.UserPhone},{order.TotalAmount},{order.OrderDate:yyyy-MM-dd HH:mm},{order.DeliveryDate:yyyy-MM-dd},{order.DeliveryTimeSlot},{order.Status},{order.Address?.City}");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Orders_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
+
+        Snackbar.Add($"Exported {filtered.Count} orders successfully!", Severity.Success);
+    }
+
+    public class OrderDto
+    {
+        [JsonPropertyName("orderId")] public int OrderId { get; set; }
+        [JsonPropertyName("orderDate")] public DateTime OrderDate { get; set; }
+        [JsonPropertyName("deliveryDate")] public DateTime DeliveryDate { get; set; }
+        [JsonPropertyName("deliveryTimeSlot")] public string DeliveryTimeSlot { get; set; } = string.Empty;
+        [JsonPropertyName("totalAmount")] public decimal TotalAmount { get; set; }
+        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+        [JsonPropertyName("userId")] public int UserId { get; set; }
+        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
+        [JsonPropertyName("userPhone")] public string UserPhone { get; set; } = string.Empty;
+        [JsonPropertyName("address")] public AddressDto? Address { get; set; }
+    }
+
+    public class AddressDto
+    {
+        [JsonPropertyName("addressId")] public int AddressId { get; set; }
+        [JsonPropertyName("street")] public string Street { get; set; } = string.Empty;
+        [JsonPropertyName("city")] public string City { get; set; } = string.Empty;
+        [JsonPropertyName("addressDetails")] public string AddressDetails { get; set; } = string.Empty;
+        [JsonPropertyName("addressType")] public string AddressType { get; set; } = string.Empty;
+    }
+
+    public class OrderDetailsDto : OrderDto
+    {
+        [JsonPropertyName("orderDetails")] public List<OrderDetailDto>? OrderDetails { get; set; }
+        [JsonPropertyName("payments")] public List<PaymentDto>? Payments { get; set; }
+    }
+
+    public class OrderDetailDto
+    {
+        [JsonPropertyName("orderDetailId")] public int OrderDetailId { get; set; }
+        [JsonPropertyName("productId")] public int ProductId { get; set; }
+        [JsonPropertyName("productName")] public string ProductName { get; set; } = string.Empty;
+        [JsonPropertyName("quantity")] public int Quantity { get; set; }
+        [JsonPropertyName("priceAtOrder")] public decimal PriceAtOrder { get; set; }
+        [JsonPropertyName("subtotal")] public decimal Subtotal { get; set; }
+    }
+
+    public class PaymentDto
+    {
+        [JsonPropertyName("paymentId")] public int PaymentId { get; set; }
+        [JsonPropertyName("amount")] public decimal Amount { get; set; }
+        [JsonPropertyName("paymentMethod")] public string PaymentMethod { get; set; } = string.Empty;
+        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+        [JsonPropertyName("paymentDate")] public DateTime PaymentDate { get; set; }
+    }
+}
+
+@* Order Details Dialog Component *@
+@code {
+    public class OrderDetailsDialog : ComponentBase
+    {
+        [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+        [Parameter] public OrderDetailsDto OrderDetails { get; set; } = null!;
+
+        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
+        {
+            // Dialog content will be rendered here
+        }
+    }
+
+    public class UpdateStatusDialog : ComponentBase
+    {
+        [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+        [Parameter] public int OrderId { get; set; }
+        [Parameter] public string CurrentStatus { get; set; } = string.Empty;
+        [Parameter] public string NextStatus { get; set; } = string.Empty;
+
+        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
+        {
+            // Dialog content will be rendered here
+        }
+    }
+}

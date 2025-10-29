@@ -1,0 +1,490 @@
+﻿@page "/payments"
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+
+<PageTitle>Payments Management</PageTitle>
+
+<!-- Page Header -->
+<div class="page-header mb-4 slide-in">
+    <div class="d-flex justify-space-between align-center flex-wrap">
+        <div>
+            <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
+                <MudIcon Icon="@Icons.Material.Filled.Payment" Class="mr-2" />
+                Payments Management
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Track and manage all payment transactions</MudText>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Secondary"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="LoadDataAsync">
+                Refresh
+            </MudButton>
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.FileDownload"
+                       OnClick="ExportToCSV"
+                       Disabled="@(paymentsList == null || !paymentsList.Any())">
+                Export CSV
+            </MudButton>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Chips -->
+<MudPaper Class="pa-3 mb-4 slide-up" Elevation="1">
+    <div class="d-flex flex-wrap gap-2 align-center">
+        <MudText Typo="Typo.body2" Class="mr-2">Filter by Status:</MudText>
+        <MudChip Color="@(_statusFilter == null ? Color.Primary : Color.Default)"
+                 OnClick="@(() => FilterByStatus(null))"
+                 Size="Size.Small">
+            All (@(paymentsList?.Count ?? 0))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Pending" ? Color.Warning : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Pending"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Schedule">
+            Pending (@GetStatusCount("Pending"))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Completed" ? Color.Success : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Completed"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.CheckCircle">
+            Completed (@GetStatusCount("Completed"))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Failed" ? Color.Error : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Failed"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Error">
+            Failed (@GetStatusCount("Failed"))
+        </MudChip>
+        <MudChip Color="@(_statusFilter == "Canceled" ? Color.Default : Color.Default)"
+                 OnClick="@(() => FilterByStatus("Canceled"))"
+                 Size="Size.Small"
+                 Icon="@Icons.Material.Filled.Cancel">
+            Canceled (@GetStatusCount("Canceled"))
+        </MudChip>
+    </div>
+</MudPaper>
+
+@if (isLoading)
+{
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent>
+            <div class="d-flex flex-column justify-center align-center pa-8">
+                <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading payments...</MudText>
+            </div>
+        </MudCardContent>
+    </MudCard>
+}
+else if (paymentsList != null && paymentsList.Any())
+{
+    <MudCard Elevation="2" Class="data-table-card fade-in">
+        <MudCardContent Class="pa-0">
+            <MudTable Items="@GetFilteredPayments()"
+                      Hover="true"
+                      Breakpoint="Breakpoint.Sm"
+                      FixedHeader="true"
+                      Height="calc(100vh - 400px)"
+                      Class="custom-table">
+
+                <ToolBarContent>
+                    <MudTextField @bind-Value="_searchString"
+                                  Placeholder="Search payments..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  IconSize="Size.Medium"
+                                  Immediate="true"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mr-2"
+                                  Style="max-width: 400px;" />
+                    <MudSpacer />
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        Showing <strong>@GetFilteredPayments().Count()</strong> of <strong>@paymentsList.Count</strong> payments
+                    </MudText>
+                </ToolBarContent>
+
+                <HeaderContent>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.PaymentId)">Payment ID</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.OrderId)">Order ID</MudTableSortLabel></MudTh>
+                    <MudTh>Customer</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.Amount)">Amount</MudTableSortLabel></MudTh>
+                    <MudTh>Payment Method</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.PaymentDate)">Date</MudTableSortLabel></MudTh>
+                    <MudTh>Status</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="Payment ID">
+                        <MudChip Size="Size.Small" Color="Color.Primary">#@context.PaymentId</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Order ID">
+                        <MudChip Size="Size.Small" Color="Color.Secondary">#@context.OrderId</MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Customer">
+                        <div class="d-flex align-center">
+                            <MudAvatar Size="Size.Small" Color="Color.Info" Class="mr-2">
+                                @context.CustomerName?.Substring(0, 1).ToUpper()
+                            </MudAvatar>
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">@context.CustomerName</MudText>
+                        </div>
+                    </MudTd>
+                    <MudTd DataLabel="Amount">
+                        <MudChip Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.AttachMoney">
+                            @context.Amount.ToString("N2") EGP
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Payment Method">
+                        <MudChip Size="Size.Small" Color="Color.Info" Icon="@GetPaymentMethodIcon(context.PaymentMethod)">
+                            @context.PaymentMethod
+                        </MudChip>
+                    </MudTd>
+                    <MudTd DataLabel="Date">
+                        <MudText Typo="Typo.body2">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PaymentDate.ToString("hh:mm tt")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Status">
+                        <MudChip Size="Size.Small"
+                                 Color="@GetStatusColor(context.Status)"
+                                 Icon="@GetStatusIcon(context.Status)">
+                            @context.Status
+                        </MudChip>
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50, 100 }" />
+                </PagerContent>
+            </MudTable>
+        </MudCardContent>
+    </MudCard>
+
+    <!-- Stats Footer -->
+    <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
+        <MudGrid>
+            <MudItem xs="6" sm="3">
+                <MudText Typo="Typo.body2" Color="Color.Success">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                    Completed: <strong>@GetStatusCount("Completed")</strong>
+                </MudText>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudText Typo="Typo.body2" Color="Color.Warning">
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Class="mr-1" />
+                    Pending: <strong>@GetStatusCount("Pending")</strong>
+                </MudText>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudText Typo="Typo.body2" Color="Color.Error">
+                    <MudIcon Icon="@Icons.Material.Filled.Error" Size="Size.Small" Class="mr-1" />
+                    Failed: <strong>@GetStatusCount("Failed")</strong>
+                </MudText>
+            </MudItem>
+            <MudItem xs="6" sm="3">
+                <MudText Typo="Typo.body2" Color="Color.Info">
+                    <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Small" Class="mr-1" />
+                    Total Revenue: <strong>@GetTotalRevenue().ToString("N2") EGP</strong>
+                </MudText>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+}
+else
+{
+    <MudCard Elevation="2" Class="fade-in">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center text-center">
+                <MudIcon Icon="@Icons.Material.Filled.AccountBalanceWallet"
+                         Size="Size.Large"
+                         Color="Color.Secondary"
+                         Class="mb-4 pulse-icon"
+                         Style="font-size: 5rem;" />
+                <MudText Typo="Typo.h6" Class="mb-2">No Payments Found</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+                    Payment transactions will appear here once orders are placed and paid.
+                </MudText>
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Secondary"
+                           OnClick="LoadDataAsync"
+                           StartIcon="@Icons.Material.Filled.Refresh">
+                    Retry
+                </MudButton>
+            </div>
+        </MudCardContent>
+    </MudCard>
+}
+
+<style>
+    .page-header {
+        animation: slideInDown 0.5s ease-out;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .slide-in {
+        animation: slideInLeft 0.5s ease-out;
+    }
+
+    .slide-up {
+        animation: slideUp 0.5s ease-out;
+    }
+
+    .pulse-icon {
+        animation: pulse 3s infinite;
+    }
+
+    .data-table-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    ::deep .mud-table-row:hover {
+        background-color: rgba(22, 163, 74, 0.05) !important;
+        transform: scale(1.01);
+    }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+</style>
+
+@code {
+    private bool isLoading = true;
+    private List<PaymentDto>? paymentsList;
+    private string _searchString = "";
+    private string? _statusFilter = null;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            // Get all orders
+            var ordersResponse = await ApiService.GetAsync<ApiService.ApiResponse<List<OrderDto>>>("/api/Orders/all");
+
+            if (ordersResponse?.Data != null && ordersResponse.Data.Any())
+            {
+                // For each order, get full details to access payments
+                var allPayments = new List<PaymentDto>();
+
+                foreach (var order in ordersResponse.Data)
+                {
+                    try
+                    {
+                        var orderDetailResponse = await ApiService.GetAsync<ApiService.ApiResponse<OrderDetailsDto>>($"/api/Orders/{order.OrderId}");
+
+                        if (orderDetailResponse?.Data?.Payments != null && orderDetailResponse.Data.Payments.Any())
+                        {
+                            foreach (var payment in orderDetailResponse.Data.Payments)
+                            {
+                                allPayments.Add(new PaymentDto
+                                {
+                                    PaymentId = payment.PaymentId,
+                                    OrderId = orderDetailResponse.Data.OrderId,
+                                    CustomerName = orderDetailResponse.Data.UserName,
+                                    Amount = payment.Amount,
+                                    PaymentMethod = payment.PaymentMethod,
+                                    Status = payment.Status,
+                                    PaymentDate = payment.PaymentDate
+                                });
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Skip orders that fail to load details
+                        continue;
+                    }
+                }
+
+                paymentsList = allPayments;
+            }
+            else
+            {
+                paymentsList = new List<PaymentDto>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading payments: {ex.Message}", Severity.Error);
+            paymentsList = new List<PaymentDto>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<PaymentDto> GetFilteredPayments()
+    {
+        if (paymentsList == null) return Enumerable.Empty<PaymentDto>();
+
+        var filtered = paymentsList.AsEnumerable();
+
+        if (_statusFilter != null)
+            filtered = filtered.Where(p => p.Status == _statusFilter);
+
+        if (!string.IsNullOrWhiteSpace(_searchString))
+            filtered = filtered.Where(p =>
+                p.PaymentId.ToString().Contains(_searchString) ||
+                p.OrderId.ToString().Contains(_searchString) ||
+                p.CustomerName.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                p.PaymentMethod.Contains(_searchString, StringComparison.OrdinalIgnoreCase) ||
+                p.Status.Contains(_searchString, StringComparison.OrdinalIgnoreCase));
+
+        return filtered;
+    }
+
+    private void FilterByStatus(string? status) => _statusFilter = status;
+
+    private int GetStatusCount(string status) => paymentsList?.Count(p => p.Status == status) ?? 0;
+
+    private decimal GetTotalRevenue() => paymentsList?.Where(p => p.Status == "Completed").Sum(p => p.Amount) ?? 0;
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Completed" => Color.Success,
+        "Pending" => Color.Warning,
+        "Failed" => Color.Error,
+        "Canceled" => Color.Default,
+        _ => Color.Default
+    };
+
+    private string GetStatusIcon(string status) => status switch
+    {
+        "Completed" => Icons.Material.Filled.CheckCircle,
+        "Pending" => Icons.Material.Filled.Schedule,
+        "Failed" => Icons.Material.Filled.Error,
+        "Canceled" => Icons.Material.Filled.Cancel,
+        _ => Icons.Material.Filled.Info
+    };
+
+    private string GetPaymentMethodIcon(string method) => method.ToLower() switch
+    {
+        "cash" => Icons.Material.Filled.Money,
+        "credit card" or "card" => Icons.Material.Filled.CreditCard,
+        "debit card" => Icons.Material.Filled.CreditCard,
+        "wallet" => Icons.Material.Filled.AccountBalanceWallet,
+        _ => Icons.Material.Filled.Payment
+    };
+
+    private async Task ExportToCSV()
+    {
+        if (paymentsList == null || !paymentsList.Any()) return;
+
+        var filtered = GetFilteredPayments().ToList();
+        var csv = new System.Text.StringBuilder();
+        csv.AppendLine("Payment ID,Order ID,Customer,Amount,Payment Method,Status,Date");
+
+        foreach (var payment in filtered)
+        {
+            csv.AppendLine($"{payment.PaymentId},{payment.OrderId},{payment.CustomerName},{payment.Amount},{payment.PaymentMethod},{payment.Status},{payment.PaymentDate:yyyy-MM-dd HH:mm}");
+        }
+
+        var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
+        var base64 = Convert.ToBase64String(bytes);
+        await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Payments_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
+
+        Snackbar.Add($"Exported {filtered.Count} payments successfully!", Severity.Success);
+    }
+
+    public class PaymentDto
+    {
+        public int PaymentId { get; set; }
+        public int OrderId { get; set; }
+        public string CustomerName { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime PaymentDate { get; set; }
+    }
+
+    public class OrderDto
+    {
+        [JsonPropertyName("orderId")] public int OrderId { get; set; }
+    }
+
+    public class OrderDetailsDto
+    {
+        [JsonPropertyName("orderId")] public int OrderId { get; set; }
+        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
+        [JsonPropertyName("payments")] public List<PaymentItemDto>? Payments { get; set; }
+    }
+
+    public class PaymentItemDto
+    {
+        [JsonPropertyName("paymentId")] public int PaymentId { get; set; }
+        [JsonPropertyName("amount")] public decimal Amount { get; set; }
+        [JsonPropertyName("paymentMethod")] public string PaymentMethod { get; set; } = string.Empty;
+        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+        [JsonPropertyName("paymentDate")] public DateTime PaymentDate { get; set; }
+    }
+}

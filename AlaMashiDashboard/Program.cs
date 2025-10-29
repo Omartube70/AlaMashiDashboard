@@ -10,9 +10,18 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddMudServices();
 
+builder.Services.AddMudServices(config =>
+{
+    config.SnackbarConfiguration.PositionClass = MudBlazor.Defaults.Classes.Position.TopRight;
+    config.SnackbarConfiguration.PreventDuplicates = true;
+    config.SnackbarConfiguration.NewestOnTop = false;
+    config.SnackbarConfiguration.ShowCloseIcon = true;
+    config.SnackbarConfiguration.VisibleStateDuration = 3000;
+    config.SnackbarConfiguration.SnackbarVariant = MudBlazor.Variant.Filled;
+});
+
 builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddScoped<ApiService>();
-
 
 builder.Services.AddScoped<TokenManagerService>();
 
