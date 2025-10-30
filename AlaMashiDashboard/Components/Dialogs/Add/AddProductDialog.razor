@@ -1,0 +1,334 @@
+﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@using Microsoft.AspNetCore.Components.Forms
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">@Localization.Get("products.add")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Class="pa-4" Style="max-height: 600px; overflow-y: auto;">
+            <MudTextField @bind-Value="productForm.ProductName"
+                          Label="@productNameLabel"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Inventory"
+                          Placeholder="@productNamePlaceholder"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateName))" />
+
+            <MudTextField @bind-Value="productForm.Barcode"
+                          Label="@barcodeLabel"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.QrCode"
+                          Placeholder="@barcodePlaceholder" />
+
+            <MudTextField @bind-Value="productForm.ProductDescription"
+                          Label="@descriptionLabel"
+                          Variant="Variant.Outlined"
+                          Lines="3"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Description"
+                          Placeholder="@descriptionPlaceholder"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateDescription))" />
+
+            <MudTextField @bind-Value="productForm.Price"
+                          Label="@priceLabel"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Number"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidatePriceText))" />
+
+            <MudTextField @bind-Value="productForm.QuantityText"
+                          Label="@quantityLabel"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Number"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Inventory2"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateQuantityText))" />
+
+            <MudSelect @bind-Value="productForm.CategoryId"
+                       Label="@categoryLabel"
+                       Variant="Variant.Outlined"
+                       AnchorOrigin="Origin.BottomCenter"
+                       Adornment="Adornment.Start"
+                       AdornmentIcon="@Icons.Material.Filled.Category"
+                       Validation="@(new Func<int, IEnumerable<string>>(ValidateCategory))">
+                <MudSelectItem Value="@(0)">-- @Localization.Get("common.select") --</MudSelectItem>
+                @if (categories != null && categories.Any())
+                {
+                    @foreach (var category in categories)
+                    {
+                        <MudSelectItem Value="@(category.CategoryId)">
+                            <div class="d-flex align-center gap-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" />
+                                @category.CategoryName
+                            </div>
+                        </MudSelectItem>
+                    }
+                }
+            </MudSelect>
+
+            <MudDivider />
+
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Small" Class="@marginClass" />
+                @imageLabel
+            </MudText>
+
+            <MudFileUpload T="IBrowserFile" 
+                           FilesChanged="OnFileSelected"
+                           Accept="image/*">
+                <ButtonTemplate>
+                    <MudButton HtmlTag="label"
+                               Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.CloudUpload"
+                               for="@context">
+                        @(selectedFileName ?? chooseImageLabel)
+                    </MudButton>
+                </ButtonTemplate>
+            </MudFileUpload>
+
+            @if (!string.IsNullOrEmpty(selectedFileName))
+            {
+                <MudChip Color="Color.Success" 
+                         Icon="@Icons.Material.Filled.CheckCircle"
+                         OnClose="ClearSelectedFile">
+                    @selectedFileName
+                </MudChip>
+            }
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+                    @foreach (var error in validationErrors)
+                    {
+                        <MudText Typo="Typo.body2">• @error</MudText>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" 
+                   Variant="Variant.Text" 
+                   StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Submit" 
+                   Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   Disabled="@isSubmitting"
+                   StartIcon="@(isSubmitting ? string.Empty : Icons.Material.Filled.Add)">
+            @if (isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span class="ml-2">@Localization.Get("dialog.creating")</span>
+            }
+            else
+            {
+                @Localization.Get("dialog.create")
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+
+    private CreateProductForm productForm = new();
+    private List<CategoryOption> categories = new();
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+    private IBrowserFile? selectedFile;
+    private string? selectedFileName;
+
+    private string productNameLabel => Localization.Get("products.name");
+    private string barcodeLabel => Localization.Get("products.barcode");
+    private string descriptionLabel => Localization.Get("products.description");
+    private string priceLabel => Localization.Get("products.price_egp");
+    private string quantityLabel => Localization.Get("products.quantity");
+    private string categoryLabel => Localization.Get("products.category");
+    private string imageLabel => Localization.Get("products.image");
+    private string chooseImageLabel => Localization.Get("products.choose_image");
+    
+    private string productNamePlaceholder => Localization.Get("products.name_placeholder");
+    private string barcodePlaceholder => Localization.Get("products.barcode_placeholder");
+    private string descriptionPlaceholder => Localization.Get("products.description_placeholder");
+    
+    private string marginClass => Localization.IsArabic ? "ml-1" : "mr-1";
+
+    private void OnFileSelected(IBrowserFile file)
+    {
+        selectedFile = file;
+        selectedFileName = file.Name;
+    }
+
+    private void ClearSelectedFile()
+    {
+        selectedFile = null;
+        selectedFileName = null;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<List<CategoryOption>>>(
+                "/api/Categories/flat");
+
+            categories = response?.Data ?? new();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading categories: {ex.Message}", Severity.Error);
+        }
+    }
+
+    public class CreateProductForm
+    {
+        public string ProductName { get; set; } = string.Empty;
+        public string Barcode { get; set; } = string.Empty;
+        public string ProductDescription { get; set; } = string.Empty;
+        public string Price { get; set; } = "0";
+        public string QuantityText { get; set; } = "0";
+        public int CategoryId { get; set; } = 0;
+    }
+
+    public class CategoryOption
+    {
+        [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+    }
+
+    private IEnumerable<string> ValidateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            yield return Localization.Get("validation.required");
+        else if (name.Length < 3)
+            yield return Localization.Get("validation.product_name_min");
+        else if (name.Length > 100)
+            yield return Localization.Get("validation.product_name_max");
+    }
+
+    private IEnumerable<string> ValidateDescription(string description)
+    {
+        if (string.IsNullOrWhiteSpace(description))
+            yield return Localization.Get("validation.required");
+        else if (description.Length < 10)
+            yield return Localization.Get("validation.description_min");
+        else if (description.Length > 500)
+            yield return Localization.Get("validation.description_max");
+    }
+
+    private IEnumerable<string> ValidatePriceText(string priceText)
+    {
+        if (string.IsNullOrWhiteSpace(priceText))
+            yield return Localization.Get("validation.required");
+        else if (!decimal.TryParse(priceText, out var price))
+            yield return Localization.Get("validation.price_number");
+        else if (price <= 0)
+            yield return Localization.Get("validation.price_positive");
+        else if (price > 999999)
+            yield return Localization.Get("validation.price_max");
+    }
+
+    private IEnumerable<string> ValidateQuantityText(string quantityText)
+    {
+        if (string.IsNullOrWhiteSpace(quantityText))
+            yield return Localization.Get("validation.required");
+        else if (!int.TryParse(quantityText, out var quantity))
+            yield return Localization.Get("validation.quantity_number");
+        else if (quantity < 0)
+            yield return Localization.Get("validation.quantity_negative");
+        else if (quantity > 999999)
+            yield return Localization.Get("validation.quantity_too_high");
+    }
+
+    private IEnumerable<string> ValidateCategory(int categoryId)
+    {
+        if (categoryId == 0)
+            yield return Localization.Get("validation.required");
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+
+        validationErrors.AddRange(ValidateName(productForm.ProductName));
+        validationErrors.AddRange(ValidateDescription(productForm.ProductDescription));
+        validationErrors.AddRange(ValidatePriceText(productForm.Price));
+        validationErrors.AddRange(ValidateQuantityText(productForm.QuantityText));
+        validationErrors.AddRange(ValidateCategory(productForm.CategoryId));
+    }
+
+    private async Task Submit()
+    {
+        ValidateForm();
+
+        if (validationErrors.Any())
+            return;
+
+        isSubmitting = true;
+
+        try
+        {
+            using var content = new MultipartFormDataContent();
+
+            content.Add(new StringContent(productForm.ProductName), "ProductName");
+            content.Add(new StringContent(productForm.Barcode ?? string.Empty), "Barcode");
+            content.Add(new StringContent(productForm.ProductDescription), "ProductDescription");
+            content.Add(new StringContent(productForm.Price), "Price");
+            content.Add(new StringContent(productForm.QuantityText), "QuantityInStock");
+            content.Add(new StringContent(productForm.CategoryId.ToString()), "CategoryID");
+
+            if (selectedFile != null)
+            {
+                var fileContent = new StreamContent(selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(selectedFile.ContentType);
+                content.Add(fileContent, "ProductImageFile", selectedFile.Name);
+            }
+
+            var response = await ApiService.PostMultipartAsync<ApiService.ApiResponse<object>>(
+                "/api/Products/Create", content);
+
+            if (response?.Success == true)
+            {
+                Snackbar.Add(Localization.Get("common.product_created"), Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+}

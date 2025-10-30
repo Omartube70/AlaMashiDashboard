@@ -1,0 +1,146 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.delete_category")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-2">
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4">
+                <MudText Typo="Typo.body1" Class="font-weight-medium">
+                    @Localization.Get("dialog.delete_warning")
+                </MudText>
+            </MudAlert>
+
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudStack Spacing="3">
+                    <div class="d-flex align-center">
+                        <MudAvatar Size="Size.Medium" Color="Color.Primary" Class="@(_isRtl ? "ml-3" : "mr-3")">
+                            <MudIcon Icon="@(string.IsNullOrEmpty(Category.IconName) ? Icons.Material.Filled.Category : Category.IconName)" />
+                        </MudAvatar>
+                        <MudStack>
+                            <MudText Typo="Typo.h6">@Category.CategoryName</MudText>
+                            @if (!string.IsNullOrEmpty(Category.IconName))
+                            {
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("categories.icon"): @Category.IconName</MudText>
+                            }
+                        </MudStack>
+                    </div>
+                    
+                    <MudDivider />
+                    
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("categories.id")</MudText>
+                            <MudText Typo="Typo.body1">@Category.CategoryId</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudStack>
+            </MudPaper>
+
+            <MudDivider />
+
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Localization.Get("dialog.admin_password_required")
+            </MudText>
+
+            <MudTextField @bind-Value="adminPassword"
+                          Label="@Localization.Get("dialog.admin_password")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Lock"
+                          Type="InputType.Password"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidatePassword))" />
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>• @error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Confirm" Variant="Variant.Filled" Color="Color.Error" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Delete">
+            @(isSubmitting ? Localization.Get("dialog.deleting") : Localization.Get("common.delete"))
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public CategoryDto Category { get; set; } = new();
+    
+    private bool _isRtl => Localization.IsArabic;
+    private string adminPassword = string.Empty;
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    public class CategoryDto
+    {
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public string IconName { get; set; } = string.Empty;
+    }
+
+    private IEnumerable<string> ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            yield return Localization.Get("validation.required");
+        else if (password.Length < 4)
+            yield return Localization.IsArabic ? "كلمة المرور يجب أن تكون 4 أحرف على الأقل" : "Password must be at least 4 characters";
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidatePassword(adminPassword));
+    }
+
+    private async Task Confirm()
+    {
+        ValidateForm();
+        if (validationErrors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            var success = await ApiService.DeleteAsync($"/api/Categories/{Category.CategoryId}");
+
+            if (success)
+            {
+                Snackbar.Add(Localization.Get("common.category_deleted"), Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

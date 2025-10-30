@@ -1,0 +1,201 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.delete_offer")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-2">
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4">
+                <MudText Typo="Typo.body1" Class="font-weight-medium">
+                    @Localization.Get("dialog.delete_warning")
+                </MudText>
+            </MudAlert>
+
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudStack Spacing="3">
+                    <div class="d-flex align-center">
+                        <MudAvatar Size="Size.Medium" Color="Color.Primary" Class="@(_isRtl ? "ml-3" : "mr-3")">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" />
+                        </MudAvatar>
+                        <MudStack>
+                            <MudText Typo="Typo.h6">@Offer.Title</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("offers.discount"): @Offer.DiscountPercentage%</MudText>
+                        </MudStack>
+                    </div>
+                    
+                    <MudDivider />
+                    
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("offers.id")</MudText>
+                            <MudText Typo="Typo.body1">@Offer.OfferId</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("offers.status")</MudText>
+                            <MudChip Size="Size.Small" Color="@(GetStatusColor(Offer.Status))">
+                                @GetLocalizedStatus(Offer.Status)
+                            </MudChip>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("offers.period")</MudText>
+                            <MudText Typo="Typo.body1">
+                                @Offer.StartDate.ToString("yyyy-MM-dd") - @Offer.EndDate.ToString("yyyy-MM-dd")
+                            </MudText>
+                        </MudItem>
+                        @if (!string.IsNullOrEmpty(Offer.Description))
+                        {
+                            <MudItem xs="12">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("offers.description")</MudText>
+                                <MudText Typo="Typo.body1">@Offer.Description</MudText>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudStack>
+            </MudPaper>
+
+            <MudDivider />
+
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Localization.Get("dialog.admin_password_required")
+            </MudText>
+
+            <MudTextField @bind-Value="adminPassword"
+                          Label="@Localization.Get("dialog.admin_password")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Lock"
+                          Type="InputType.Password"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidatePassword))" />
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>• @error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Confirm" Variant="Variant.Filled" Color="Color.Error" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Delete">
+            @(isSubmitting ? Localization.Get("dialog.deleting") : Localization.Get("common.delete"))
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public OfferDto Offer { get; set; } = new();
+    
+    private bool _isRtl => Localization.IsArabic;
+    private string adminPassword = string.Empty;
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    public class OfferDto
+    {
+        public int OfferId { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal DiscountPercentage { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public string Status { get; set; } = string.Empty;
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status.ToLower() switch
+        {
+            "active" => Color.Success,
+            "upcoming" => Color.Info,
+            "expired" => Color.Default,
+            _ => Color.Default
+        };
+    }
+
+    private string GetLocalizedStatus(string status)
+    {
+        if (Localization.IsArabic)
+        {
+            return status.ToLower() switch
+            {
+                "active" => "نشط",
+                "upcoming" => "قادم",
+                "expired" => "منتهي",
+                _ => status
+            };
+        }
+        else
+        {
+            return status.ToLower() switch
+            {
+                "active" => "Active",
+                "upcoming" => "Upcoming",
+                "expired" => "Expired",
+                _ => status
+            };
+        }
+    }
+
+    private IEnumerable<string> ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            yield return Localization.Get("validation.required");
+        else if (password.Length < 4)
+            yield return Localization.IsArabic ? "كلمة المرور يجب أن تكون 4 أحرف على الأقل" : "Password must be at least 4 characters";
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidatePassword(adminPassword));
+    }
+
+    private async Task Confirm()
+    {
+        ValidateForm();
+        if (validationErrors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            var success = await ApiService.DeleteAsync($"/api/Offers/{Offer.OfferId}");
+
+            if (success)
+            {
+                Snackbar.Add(Localization.Get("common.offer_deleted"), Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

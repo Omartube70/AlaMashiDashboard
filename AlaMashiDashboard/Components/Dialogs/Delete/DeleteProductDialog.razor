@@ -1,0 +1,167 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.delete_product")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-2">
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4">
+                <MudText Typo="Typo.body1" Class="font-weight-medium">
+                    @Localization.Get("dialog.delete_warning")
+                </MudText>
+            </MudAlert>
+
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudStack Spacing="3">
+                    <div class="d-flex align-center">
+                        @if (!string.IsNullOrEmpty(Product.ImageUrl))
+                        {
+                            <MudAvatar Size="Size.Medium" Class="@(_isRtl ? "ml-3" : "mr-3")">
+                                <img src="@Product.ImageUrl" alt="@Product.ProductName" style="width: 100%; height: 100%; object-fit: cover;" />
+                            </MudAvatar>
+                        }
+                        else
+                        {
+                            <MudAvatar Size="Size.Medium" Color="Color.Primary" Class="@(_isRtl ? "ml-3" : "mr-3")">
+                                <MudIcon Icon="@Icons.Material.Filled.Inventory" />
+                            </MudAvatar>
+                        }
+                        <MudStack>
+                            <MudText Typo="Typo.h6">@Product.ProductName</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("products.price"): @Product.Price.ToString("N2") @Localization.Get("units.egp")</MudText>
+                        </MudStack>
+                    </div>
+                    
+                    <MudDivider />
+                    
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("products.id")</MudText>
+                            <MudText Typo="Typo.body1">@Product.ProductId</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("products.category")</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Info">
+                                @Product.CategoryName
+                            </MudChip>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("products.stock")</MudText>
+                            <MudText Typo="Typo.body1">@Product.QuantityInStock @Localization.Get("units.pieces")</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudStack>
+            </MudPaper>
+
+            <MudDivider />
+
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Localization.Get("dialog.admin_password_required")
+            </MudText>
+
+            <MudTextField @bind-Value="adminPassword"
+                          Label="@Localization.Get("dialog.admin_password")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Lock"
+                          Type="InputType.Password"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidatePassword))" />
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>• @error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Confirm" Variant="Variant.Filled" Color="Color.Error" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Delete">
+            @(isSubmitting ? Localization.Get("dialog.deleting") : Localization.Get("common.delete"))
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public ProductDto Product { get; set; } = new();
+    
+    private bool _isRtl => Localization.IsArabic;
+    private string adminPassword = string.Empty;
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    public class ProductDto
+    {
+        public int ProductId { get; set; }
+        public string ProductName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public int QuantityInStock { get; set; }
+        public int CategoryId { get; set; }
+        public string CategoryName { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty;
+    }
+
+    private IEnumerable<string> ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            yield return Localization.Get("validation.required");
+        else if (password.Length < 4)
+            yield return Localization.IsArabic ? "كلمة المرور يجب أن تكون 4 أحرف على الأقل" : "Password must be at least 4 characters";
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidatePassword(adminPassword));
+    }
+
+    private async Task Confirm()
+    {
+        ValidateForm();
+        if (validationErrors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            var success = await ApiService.DeleteAsync($"/api/Products/{Product.ProductId}");
+
+            if (success)
+            {
+                Snackbar.Add(Localization.Get("common.product_deleted"), Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

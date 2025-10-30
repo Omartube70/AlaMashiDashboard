@@ -164,6 +164,82 @@ public class ApiService
         }
     }
 
+    // ------------------- POST Multipart API Call (for file uploads) -------------------
+    public async Task<T?> PostMultipartAsync<T>(string url, MultipartFormDataContent content)
+    {
+        var token = await _tokenManager.GetAccessTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            _navManager.NavigateTo("/login");
+            return default;
+        }
+
+        var client = _httpClientFactory.CreateClient("Api");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            var response = await client.PostAsync(url, content);
+            if (!response.IsSuccessStatusCode && response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                bool refreshed = await RefreshTokenAsync();
+                if (refreshed)
+                    return await PostMultipartAsync<T>(url, content);
+
+                _navManager.NavigateTo("/login");
+                return default;
+            }
+
+            return await response.Content.ReadFromJsonAsync<T>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"POST Multipart exception: {ex.Message}");
+            return default;
+        }
+    }
+
+    // ------------------- PATCH Multipart API Call (for file uploads) -------------------
+    public async Task<T?> PatchMultipartAsync<T>(string url, MultipartFormDataContent content)
+    {
+        var token = await _tokenManager.GetAccessTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            _navManager.NavigateTo("/login");
+            return default;
+        }
+
+        var client = _httpClientFactory.CreateClient("Api");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            var request = new HttpRequestMessage(HttpMethod.Patch, url)
+            {
+                Content = content
+            };
+
+            var response = await client.SendAsync(request);
+            
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                bool refreshed = await RefreshTokenAsync();
+                if (refreshed)
+                    return await PatchMultipartAsync<T>(url, content);
+
+                _navManager.NavigateTo("/login");
+                return default;
+            }
+
+            return await response.Content.ReadFromJsonAsync<T>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"PATCH Multipart exception: {ex.Message}");
+            return default;
+        }
+    }
+
     // ------------------- PATCH API Call -------------------
     public async Task<T?> PatchAsync<T>(string url, object data)
     {

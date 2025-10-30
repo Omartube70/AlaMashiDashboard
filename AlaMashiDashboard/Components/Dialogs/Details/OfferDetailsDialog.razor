@@ -1,0 +1,221 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Color="Color.Warning" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.offer_details")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="max-height: 70vh; overflow-y: auto;">
+            @* العنوان والخصم *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-4" Style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                <div class="d-flex align-center justify-space-between mb-2">
+                    <div>
+                        <MudText Typo="Typo.h4" Style="color: white;" Class="font-weight-bold">@OfferDetails.Title</MudText>
+                        <MudChip Size="Size.Small" Style="background-color: rgba(255,255,255,0.3); color: white;">#@OfferDetails.OfferID</MudChip>
+                    </div>
+                    <div class="text-end">
+                        <MudText Typo="Typo.h2" Style="color: white;" Class="font-weight-bold">@OfferDetails.DiscountPercentage%</MudText>
+                        <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.9);">@Localization.Get("dialog.discount")</MudText>
+                    </div>
+                </div>
+            </MudPaper>
+
+            @* معلومات العرض *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-4">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Description" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("dialog.description")
+                </MudText>
+                <MudText Typo="Typo.body1" Class="mb-4">@OfferDetails.Description</MudText>
+
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-success-lighten);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Success" />
+                                <MudText Typo="Typo.caption" Color="Color.Success">@Localization.Get("offers.start_date")</MudText>
+                            </div>
+                            <MudText Typo="Typo.h6" Class="font-weight-bold">@OfferDetails.StartDate.ToString("dd MMM yyyy")</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@OfferDetails.StartDate.ToString("hh:mm tt")</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-error-lighten);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Event" Color="Color.Error" />
+                                <MudText Typo="Typo.caption" Color="Color.Error">@Localization.Get("offers.end_date")</MudText>
+                            </div>
+                            <MudText Typo="Typo.h6" Class="font-weight-bold">@OfferDetails.EndDate.ToString("dd MMM yyyy")</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@OfferDetails.EndDate.ToString("hh:mm tt")</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-info-lighten);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@GetStatusIcon()" Color="@GetStatusColor()" />
+                                <MudText Typo="Typo.caption" Color="@GetStatusColor()">@Localization.Get("offers.status")</MudText>
+                            </div>
+                            <MudChip Size="Size.Medium" Color="@GetStatusColor()">@GetStatusText()</MudChip>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @* المنتجات المرتبطة *@
+            @if (OfferDetails.Products != null && OfferDetails.Products.Any())
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.products_in_offer") (@OfferDetails.Products.Count)
+                    </MudText>
+                    <MudStack Spacing="2">
+                        @foreach (var product in OfferDetails.Products)
+                        {
+                            <MudCard Elevation="0" Outlined="true">
+                                <MudCardContent Class="pa-3">
+                                    <div class="d-flex align-center justify-space-between">
+                                        <div>
+                                            <MudText Typo="Typo.body1" Class="font-weight-bold">@product.ProductName</MudText>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">@product.CategoryName</MudText>
+                                        </div>
+                                        <div class="text-end">
+                                            <MudText Typo="Typo.body2" Style="text-decoration: line-through;" Color="Color.Secondary">
+                                                @product.OriginalPrice.ToString("N2") @Localization.Get("units.egp")
+                                            </MudText>
+                                            <MudText Typo="Typo.h6" Color="Color.Success" Class="font-weight-bold">
+                                                @product.DiscountedPrice.ToString("N2") @Localization.Get("units.egp")
+                                            </MudText>
+                                        </div>
+                                    </div>
+                                </MudCardContent>
+                            </MudCard>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+
+            @* إحصائيات العرض *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <MudText Typo="Typo.h6" Class="mb-3" Style="color: white;">
+                    <MudIcon Icon="@Icons.Material.Filled.Analytics" Style="color: white;" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("dialog.offer_summary")
+                </MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="4">
+                        <div class="text-center">
+                            <MudText Typo="Typo.h5" Style="color: white;">@OfferDetails.DiscountPercentage%</MudText>
+                            <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.9);">@Localization.Get("dialog.discount")</MudText>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="4">
+                        <div class="text-center">
+                            <MudText Typo="Typo.h5" Style="color: white;">@(OfferDetails.Products?.Count ?? 0)</MudText>
+                            <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.9);">@Localization.Get("dialog.products")</MudText>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="4">
+                        <div class="text-center">
+                            <MudText Typo="Typo.h5" Style="color: white;">@GetDaysRemaining()</MudText>
+                            <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.9);">@Localization.Get("dialog.days_remaining")</MudText>
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.close")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .text-center {
+        text-align: center;
+    }
+    .text-end {
+        text-align: end;
+    }
+</style>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public OfferDetailsDto OfferDetails { get; set; } = null!;
+
+    private bool _isRtl => Localization.IsArabic;
+
+    private void Close() => MudDialog.Close();
+
+    private string GetStatusText()
+    {
+        var now = DateTime.Now;
+        if (now < OfferDetails.StartDate)
+            return Localization.Get("offers.upcoming");
+        else if (now >= OfferDetails.StartDate && now <= OfferDetails.EndDate)
+            return Localization.Get("offers.active");
+        else
+            return Localization.Get("offers.expired");
+    }
+
+    private Color GetStatusColor()
+    {
+        var now = DateTime.Now;
+        if (now < OfferDetails.StartDate)
+            return Color.Info;
+        else if (now >= OfferDetails.StartDate && now <= OfferDetails.EndDate)
+            return Color.Success;
+        else
+            return Color.Default;
+    }
+
+    private string GetStatusIcon()
+    {
+        var now = DateTime.Now;
+        if (now < OfferDetails.StartDate)
+            return Icons.Material.Filled.Schedule;
+        else if (now >= OfferDetails.StartDate && now <= OfferDetails.EndDate)
+            return Icons.Material.Filled.CheckCircle;
+        else
+            return Icons.Material.Filled.EventBusy;
+    }
+
+    private string GetDaysRemaining()
+    {
+        var now = DateTime.Now;
+        if (now > OfferDetails.EndDate)
+            return "0";
+        
+        var days = (OfferDetails.EndDate - now).Days;
+        return days.ToString();
+    }
+
+    public class OfferDetailsDto
+    {
+        [JsonPropertyName("offerID")] public int OfferID { get; set; }
+        [JsonPropertyName("title")] public string Title { get; set; } = string.Empty;
+        [JsonPropertyName("description")] public string Description { get; set; } = string.Empty;
+        [JsonPropertyName("discountPercentage")] public decimal DiscountPercentage { get; set; }
+        [JsonPropertyName("startDate")] public DateTime StartDate { get; set; }
+        [JsonPropertyName("endDate")] public DateTime EndDate { get; set; }
+        [JsonPropertyName("products")] public List<ProductDto>? Products { get; set; }
+    }
+
+    public class ProductDto
+    {
+        [JsonPropertyName("productName")] public string ProductName { get; set; } = string.Empty;
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("originalPrice")] public decimal OriginalPrice { get; set; }
+        [JsonPropertyName("discountedPrice")] public decimal DiscountedPrice { get; set; }
+    }
+}

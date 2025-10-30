@@ -28,21 +28,6 @@
                           AdornmentIcon="@Icons.Material.Filled.Image"
                           HelperText="@Localization.Get("dialog.icon_helper")" />
 
-            <MudSelect @bind-Value="categoryForm.ParentId"
-                       Label="@Localization.Get("dialog.parent_category")"
-                       Variant="Variant.Outlined"
-                       AdornmentIcon="@Icons.Material.Filled.AccountTree"
-                       Adornment="Adornment.Start">
-                <MudSelectItem Value="@((int?)null)">@Localization.Get("dialog.no_parent")</MudSelectItem>
-                @if (parentCategories != null)
-                {
-                    @foreach (var cat in parentCategories.Where(c => c.CategoryId != CategoryId))
-                    {
-                        <MudSelectItem Value="@(cat.CategoryId)">@cat.CategoryName</MudSelectItem>
-                    }
-                }
-            </MudSelect>
-
             @if (validationErrors.Any())
             {
                 <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
@@ -70,42 +55,21 @@
     [Parameter] public int CategoryId { get; set; }
     [Parameter] public string CategoryName { get; set; } = string.Empty;
     [Parameter] public string IconName { get; set; } = string.Empty;
-    [Parameter] public int? ParentId { get; set; }
 
     private UpdateCategoryForm categoryForm = new();
-    private List<CategoryOption> parentCategories = new();
     private List<string> validationErrors = new();
     private bool isSubmitting = false;
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         categoryForm.CategoryName = CategoryName;
         categoryForm.IconName = IconName;
-        categoryForm.ParentId = ParentId;
-        await LoadParentCategories();
-    }
-
-    private async Task LoadParentCategories()
-    {
-        try
-        {
-            var response = await ApiService.GetAsync<ApiService.ApiResponse<List<CategoryOption>>>("/api/Categories/flat");
-            parentCategories = response?.Data ?? new();
-        }
-        catch { }
     }
 
     public class UpdateCategoryForm
     {
         public string CategoryName { get; set; } = string.Empty;
         public string IconName { get; set; } = string.Empty;
-        public int? ParentId { get; set; }
-    }
-
-    public class CategoryOption
-    {
-        [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
-        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
     }
 
     private IEnumerable<string> ValidateName(string name)
@@ -130,18 +94,17 @@
         isSubmitting = true;
         try
         {
-            var updateRequest = new
+            var updateRequest = new UpdateCategoryRequest
             {
-                categoryName = categoryForm.CategoryName,
-                iconName = categoryForm.IconName,
-                parentId = categoryForm.ParentId
+                NewCategoryName = categoryForm.CategoryName,
+                IconName = categoryForm.IconName
             };
 
             var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Categories/{CategoryId}", updateRequest);
 
             if (response?.Success == true)
             {
-                Snackbar.Add(Localization.IsArabic ? "تم تحديث التصنيف بنجاح!" : "Category updated successfully!", Severity.Success);
+                Snackbar.Add(Localization.Get("common.category_updated"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));
             }
             else
@@ -160,4 +123,10 @@
     }
 
     private void Cancel() => MudDialog.Cancel();
+
+    public class UpdateCategoryRequest
+    {
+        [JsonPropertyName("newCategoryName")] public string NewCategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("iconName")] public string IconName { get; set; } = string.Empty;
+    }
 }

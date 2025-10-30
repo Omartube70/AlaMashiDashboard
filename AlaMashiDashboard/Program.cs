@@ -2,6 +2,7 @@
 using AlaMashiDashboard.Components;
 using AlaMashiDashboard.Services;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+using MudBlazor;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,8 +26,8 @@ builder.Services.AddMudServices(config =>
 builder.Services.AddScoped<ProtectedLocalStorage>();
 builder.Services.AddScoped<ApiService>();
 builder.Services.AddScoped<LocalizationService>(); // ✅ إضافة خدمة الترجمة
-
-builder.Services.AddScoped<TokenManagerService>();
+builder.Services.AddScoped<TokenManagerService>(); // ✅ إضافة خدمة الترجمة
+builder.Services.AddScoped<IDialogService, DialogService>(); // ✅ إضافة خدمة الـ Dialog
 
 builder.Services.AddHttpClient("Api", client =>
 {

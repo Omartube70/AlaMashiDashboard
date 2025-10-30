@@ -415,51 +415,99 @@ else
         if (!result.Canceled) await LoadDataAsync();
     }
 
-    private void OpenEditDialog(ProductDto product)
+    private async Task OpenEditDialog(ProductDto product)
     {
-        Snackbar.Add(Localization.IsArabic
-            ? $"ميزة التعديل لـ {product.ProductName} - قريباً"
-            : $"Edit feature for {product.ProductName} - Coming soon", Severity.Info);
+        var parameters = new DialogParameters
+        {
+            ["ProductID"] = product.ProductID,
+            ["ProductName"] = product.ProductName,
+            ["ProductDescription"] = product.ProductDescription,
+            ["Price"] = product.Price,
+            ["QuantityInStock"] = product.QuantityInStock,
+            ["CategoryId"] = product.CategoryId, 
+            ["MainImageURL"] = product.MainImageURL
+        };
+
+        var dialog = await DialogService.ShowAsync<EditProductDialog>(
+            Localization.Get("dialog.edit_product"),
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = false
+            });
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await LoadDataAsync();
+        }
     }
 
-    private void ViewProduct(ProductDto product)
+    private async Task ViewProduct(ProductDto product)
     {
-        Snackbar.Add(Localization.IsArabic
-            ? $"عرض: {product.ProductName}"
-            : $"Viewing: {product.ProductName}", Severity.Info);
-    }
-
-    private async Task DeleteProduct(ProductDto product)
-    {
-        var confirmed = await DialogService.ShowMessageBox(
-            Localization.Get("common.delete"),
-            Localization.IsArabic
-                ? $"هل أنت متأكد من حذف '{product.ProductName}'؟ لا يمكن التراجع عن هذا الإجراء."
-                : $"Are you sure you want to delete '{product.ProductName}'? This action cannot be undone.",
-            yesText: Localization.Get("common.delete"),
-            cancelText: Localization.Get("common.cancel"));
-
-        if (confirmed != true) return;
-
         try
         {
-            var deleted = await ApiService.DeleteAsync($"/api/Products/{product.ProductID}");
-            if (deleted)
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<ProductDetailsDialog.ProductDetailsDto>>($"/api/Products/{product.ProductID}");
+
+            if (response?.Data != null)
             {
-                Snackbar.Add(Localization.IsArabic
-                    ? $"تم حذف المنتج '{product.ProductName}' بنجاح!"
-                    : $"Product '{product.ProductName}' deleted successfully!", Severity.Success);
-                await LoadDataAsync();
-            }
-            else
-            {
-                Snackbar.Add(Localization.Get("common.failed"), Severity.Error);
+                var parameters = new DialogParameters { ["ProductDetails"] = response.Data };
+                await DialogService.ShowAsync<ProductDetailsDialog>(
+                    Localization.Get("dialog.product_details"),
+                    parameters,
+                    new DialogOptions
+                    {
+                        MaxWidth = MaxWidth.Medium,
+                        FullWidth = true
+                    });
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
+    }
+
+    private async Task DeleteProduct(ProductDto product)
+    {
+        var productDto = new DeleteProductDialog.ProductDto
+        {
+            ProductId = product.ProductID,
+            ProductName = product.ProductName,
+            Description = product.ProductDescription,
+            Price = product.Price,
+            QuantityInStock = product.QuantityInStock,
+            CategoryId = product.CategoryId,
+            CategoryName = product.CategoryName,
+            ImageUrl = product.MainImageURL
+        };
+        
+        var parameters = new DialogParameters
+        {
+            ["Product"] = productDto
+        };
+
+        var dialog = await DialogService.ShowAsync<DeleteProductDialog>(
+            Localization.Get("dialog.delete_product"),
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = true
+            });
+
+        var result = await dialog.Result;
+        
+        if (result.Canceled)
+            return;
+
+        // The dialog already handled the deletion, just reload the data
+        await LoadDataAsync();
     }
 
     public class ProductDto
@@ -471,5 +519,7 @@ else
         [JsonPropertyName("mainImageURL")] public string MainImageURL { get; set; } = string.Empty;
         [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
         [JsonPropertyName("productDescription")] public string ProductDescription { get; set; } = string.Empty;
+        [JsonPropertyName("CategoryId")] public int CategoryId { get; set; }
+
     }
 }

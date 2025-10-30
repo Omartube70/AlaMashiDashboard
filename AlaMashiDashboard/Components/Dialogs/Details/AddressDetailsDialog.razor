@@ -1,0 +1,228 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.LocationOn" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.address_details")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="max-height: 70vh; overflow-y: auto;">
+            @* العنوان الرئيسي *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-4">
+                <div class="d-flex align-center gap-3 mb-4">
+                    <MudAvatar Color="Color.Info" Size="Size.Large" Variant="Variant.Filled">
+                        <MudIcon Icon="@GetAddressTypeIcon(AddressDetails.AddressType)" Size="Size.Large" />
+                    </MudAvatar>
+                    <div>
+                        <MudChip Size="Size.Medium" Color="@GetAddressTypeColor(AddressDetails.AddressType)" Icon="@GetAddressTypeIcon(AddressDetails.AddressType)">
+                            @GetLocalizedAddressType(AddressDetails.AddressType)
+                        </MudChip>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("addresses.id"): #@AddressDetails.AddressId</MudText>
+                    </div>
+                </div>
+
+                <MudDivider Class="my-3" />
+
+                <MudStack Spacing="3">
+                    <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                        <div class="d-flex align-center gap-2 mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.LocationCity" Color="Color.Primary" Size="Size.Medium" />
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@Localization.Get("addresses.city")</MudText>
+                        </div>
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">@AddressDetails.City</MudText>
+                    </MudPaper>
+
+                    <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                        <div class="d-flex align-center gap-2 mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Signpost" Color="Color.Info" Size="Size.Medium" />
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@Localization.Get("addresses.street")</MudText>
+                        </div>
+                        <MudText Typo="Typo.body1" Class="font-weight-medium">@AddressDetails.Street</MudText>
+                    </MudPaper>
+
+                    <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                        <div class="d-flex align-center gap-2 mb-2">
+                            <MudIcon Icon="@Icons.Material.Filled.Description" Color="Color.Success" Size="Size.Medium" />
+                            <MudText Typo="Typo.subtitle2" Color="Color.Secondary">@Localization.Get("addresses.details")</MudText>
+                        </div>
+                        <MudText Typo="Typo.body1">@AddressDetails.AddressDetails</MudText>
+                    </MudPaper>
+                </MudStack>
+            </MudPaper>
+
+            @* معلومات المستخدم المرتبط *@
+            @if (AddressDetails.User != null)
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.owner_info")
+                    </MudText>
+                    <div class="d-flex align-center gap-3">
+                        <MudAvatar Color="Color.Primary" Size="Size.Medium">
+                            @AddressDetails.User.UserName?.Substring(0, 1).ToUpper()
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.body1" Class="font-weight-bold">@AddressDetails.User.UserName</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
+                                @AddressDetails.User.Email
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
+                                @AddressDetails.User.Phone
+                            </MudText>
+                        </div>
+                    </div>
+                </MudPaper>
+            }
+
+            @* الطلبات المرتبطة بهذا العنوان *@
+            @if (AddressDetails.Orders != null && AddressDetails.Orders.Any())
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Success" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.deliveries_to_address") (@AddressDetails.Orders.Count)
+                    </MudText>
+                    <MudSimpleTable Dense="true" Hover="true" Bordered="true">
+                        <thead>
+                            <tr>
+                                <th>@Localization.Get("orders.order_id")</th>
+                                <th>@Localization.Get("orders.delivery_date")</th>
+                                <th class="text-center">@Localization.Get("orders.status")</th>
+                                <th class="text-center">@Localization.Get("orders.total_amount")</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in AddressDetails.Orders.Take(5))
+                            {
+                                <tr>
+                                    <td><MudChip Size="Size.Small" Color="Color.Primary">#@order.OrderId</MudChip></td>
+                                    <td>@order.DeliveryDate.ToString("dd MMM yyyy")</td>
+                                    <td class="text-center">
+                                        <MudChip Size="Size.Small" Color="@GetOrderStatusColor(order.Status)">@order.Status</MudChip>
+                                    </td>
+                                    <td class="text-center font-weight-bold">@order.TotalAmount.ToString("N2") @Localization.Get("units.egp")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                    @if (AddressDetails.Orders.Count > 5)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                            @Localization.Get("dialog.showing_first_5_orders")
+                        </MudText>
+                    }
+                </MudPaper>
+            }
+
+            @* خريطة العنوان (مظهر تزييني) *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                <MudText Typo="Typo.h6" Color="Color.Info" Class="mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Map" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("dialog.full_address")
+                </MudText>
+                <MudCard Elevation="1" Class="pa-4" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <MudText Typo="Typo.body1" Class="mb-2" Style="color: white; opacity: 0.9;">
+                        <MudIcon Icon="@Icons.Material.Filled.Home" Style="color: white;" />
+                        @GetLocalizedAddressType(AddressDetails.AddressType)
+                    </MudText>
+                    <MudDivider Style="background-color: rgba(255,255,255,0.3);" Class="my-2" />
+                    <MudText Typo="Typo.h6" Class="font-weight-bold" Style="color: white;">
+                        @AddressDetails.Street, @AddressDetails.City
+                    </MudText>
+                    <MudText Typo="Typo.body2" Style="color: white; opacity: 0.9;">
+                        @AddressDetails.AddressDetails
+                    </MudText>
+                </MudCard>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.close")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .text-center {
+        text-align: center;
+    }
+</style>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public AddressDetailsDto AddressDetails { get; set; } = null!;
+
+    private bool _isRtl => Localization.IsArabic;
+
+    private void Close() => MudDialog.Close();
+
+    private string GetLocalizedAddressType(string type) => type switch
+    {
+        "Home" => Localization.Get("addresses.home"),
+        "Work" => Localization.Get("addresses.work"),
+        "Other" => Localization.Get("addresses.other"),
+        _ => type
+    };
+
+    private Color GetAddressTypeColor(string type) => type switch
+    {
+        "Home" => Color.Success,
+        "Work" => Color.Info,
+        "Other" => Color.Warning,
+        _ => Color.Default
+    };
+
+    private string GetAddressTypeIcon(string type) => type switch
+    {
+        "Home" => Icons.Material.Filled.Home,
+        "Work" => Icons.Material.Filled.Business,
+        "Other" => Icons.Material.Filled.Place,
+        _ => Icons.Material.Filled.LocationOn
+    };
+
+    private Color GetOrderStatusColor(string status) => status switch
+    {
+        "Pending" => Color.Warning,
+        "InPreparation" => Color.Info,
+        "OutForDelivery" => Color.Secondary,
+        "Delivered" => Color.Success,
+        "Canceled" => Color.Error,
+        _ => Color.Default
+    };
+
+    public class AddressDetailsDto
+    {
+        [JsonPropertyName("addressId")] public int AddressId { get; set; }
+        [JsonPropertyName("street")] public string Street { get; set; } = string.Empty;
+        [JsonPropertyName("city")] public string City { get; set; } = string.Empty;
+        [JsonPropertyName("addressDetails")] public string AddressDetails { get; set; } = string.Empty;
+        [JsonPropertyName("addressType")] public string AddressType { get; set; } = string.Empty;
+        [JsonPropertyName("user")] public UserDto? User { get; set; }
+        [JsonPropertyName("orders")] public List<OrderDto>? Orders { get; set; }
+    }
+
+    public class UserDto
+    {
+        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
+        [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("phone")] public string Phone { get; set; } = string.Empty;
+    }
+
+    public class OrderDto
+    {
+        [JsonPropertyName("orderId")] public int OrderId { get; set; }
+        [JsonPropertyName("deliveryDate")] public DateTime DeliveryDate { get; set; }
+        [JsonPropertyName("totalAmount")] public decimal TotalAmount { get; set; }
+        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+    }
+}

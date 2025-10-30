@@ -1,50 +1,69 @@
 ﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
+@inject LocalizationService Localization
 
 <MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Add" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.add_offer")</MudText>
+        </div>
+    </TitleContent>
+
     <DialogContent>
-        <MudStack Spacing="3">
+        <MudStack Spacing="3" Class="pa-2">
             <MudTextField @bind-Value="offerForm.Title"
-                          Label="Offer Title"
+                          Label="@offerTitleLabel"
                           Variant="Variant.Outlined"
-                          Placeholder="e.g., Summer Sale"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.LocalOffer"
+                          Placeholder="@offerTitlePlaceholder"
                           Validation="@(new Func<string, IEnumerable<string>>(ValidateTitle))" />
 
             <MudTextField @bind-Value="offerForm.Description"
-                          Label="Description"
+                          Label="@descriptionLabel"
                           Variant="Variant.Outlined"
                           Lines="3"
-                          Placeholder="Describe your offer..."
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Description"
+                          Placeholder="@descriptionPlaceholder"
                           Validation="@(new Func<string, IEnumerable<string>>(ValidateDescription))" />
 
             <MudNumericField @bind-Value="offerForm.DiscountPercentage"
-                             Label="Discount Percentage (%)"
+                             Label="@discountLabel"
                              Variant="Variant.Outlined"
                              Min="1"
                              Max="100"
+                             Adornment="Adornment.Start"
+                             AdornmentIcon="@Icons.Material.Filled.Percent"
                              Validation="@(new Func<decimal, IEnumerable<string>>(ValidateDiscount))" />
 
             <MudDatePicker @bind-Date="offerForm.StartDate"
-                           Label="Start Date"
+                           Label="@startDateLabel"
                            Variant="Variant.Outlined"
                            PickerVariant="PickerVariant.Dialog"
                            ShowToolbar="true"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.CalendarToday"
                            DateFormat="dd/MM/yyyy" />
 
             <MudDatePicker @bind-Date="offerForm.EndDate"
-                           Label="End Date"
+                           Label="@endDateLabel"
                            Variant="Variant.Outlined"
                            PickerVariant="PickerVariant.Dialog"
                            ShowToolbar="true"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.Event"
                            DateFormat="dd/MM/yyyy" />
 
             @if (validationErrors.Any())
             {
-                <MudAlert Severity="Severity.Error" Class="mb-2">
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
                     @foreach (var error in validationErrors)
                     {
-                        <div>@error</div>
+                        <div>• @error</div>
                     }
                 </MudAlert>
             }
@@ -52,9 +71,11 @@
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Outlined">Cancel</MudButton>
-        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting">
-            @(isSubmitting ? "Creating..." : "Create Offer")
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Add">
+            @(isSubmitting ? Localization.Get("dialog.creating") : Localization.Get("dialog.create"))
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -65,6 +86,14 @@
     private CreateOfferForm offerForm = new();
     private List<string> validationErrors = new();
     private bool isSubmitting = false;
+
+    private string offerTitleLabel => Localization.Get("dialog.offer_title");
+    private string offerTitlePlaceholder => Localization.Get("dialog.offer_title_placeholder");
+    private string descriptionLabel => Localization.Get("dialog.description");
+    private string descriptionPlaceholder => Localization.Get("dialog.description_placeholder");
+    private string discountLabel => Localization.Get("dialog.discount_percentage");
+    private string startDateLabel => Localization.Get("dialog.start_date");
+    private string endDateLabel => Localization.Get("dialog.end_date");
 
     public class CreateOfferForm
     {
@@ -78,29 +107,29 @@
     private IEnumerable<string> ValidateTitle(string title)
     {
         if (string.IsNullOrWhiteSpace(title))
-            yield return "Title is required";
+            yield return Localization.Get("validation.required");
         else if (title.Length < 3)
-            yield return "Title must be at least 3 characters";
+            yield return Localization.Get("validation.title_min");
         else if (title.Length > 100)
-            yield return "Title must not exceed 100 characters";
+            yield return Localization.Get("validation.title_max");
     }
 
     private IEnumerable<string> ValidateDescription(string description)
     {
         if (string.IsNullOrWhiteSpace(description))
-            yield return "Description is required";
+            yield return Localization.Get("validation.required");
         else if (description.Length < 10)
-            yield return "Description must be at least 10 characters";
+            yield return Localization.Get("validation.description_min");
         else if (description.Length > 500)
-            yield return "Description must not exceed 500 characters";
+            yield return Localization.Get("validation.description_max");
     }
 
     private IEnumerable<string> ValidateDiscount(decimal discount)
     {
         if (discount < 1)
-            yield return "Discount must be at least 1%";
+            yield return Localization.Get("validation.discount_min");
         else if (discount > 100)
-            yield return "Discount cannot exceed 100%";
+            yield return Localization.Get("validation.discount_max");
     }
 
     private void ValidateForm()
@@ -112,13 +141,13 @@
         validationErrors.AddRange(ValidateDiscount(offerForm.DiscountPercentage));
 
         if (!offerForm.StartDate.HasValue)
-            validationErrors.Add("Start date is required");
+            validationErrors.Add(Localization.Get("validation.start_date_required"));
 
         if (!offerForm.EndDate.HasValue)
-            validationErrors.Add("End date is required");
+            validationErrors.Add(Localization.Get("validation.end_date_required"));
 
         if (offerForm.StartDate.HasValue && offerForm.EndDate.HasValue && offerForm.StartDate > offerForm.EndDate)
-            validationErrors.Add("End date must be after start date");
+            validationErrors.Add(Localization.Get("validation.end_after_start"));
     }
 
     private async Task Submit()
@@ -146,17 +175,17 @@
 
             if (response?.Success == true)
             {
-                Snackbar.Add("Offer created successfully!", Severity.Success);
+                Snackbar.Add(Localization.Get("common.offer_created"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));
             }
             else
             {
-                Snackbar.Add(response?.Message ?? "Failed to create offer", Severity.Error);
+                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error creating offer: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.create_error")}: {ex.Message}", Severity.Error);
         }
         finally
         {

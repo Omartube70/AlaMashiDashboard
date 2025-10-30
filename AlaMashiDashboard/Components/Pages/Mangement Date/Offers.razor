@@ -435,9 +435,32 @@ else
 
     private async Task OpenEditDialog(OfferDto offer)
     {
-        Snackbar.Add(Localization.IsArabic
-            ? $"ميزة التعديل لـ {offer.Title} - قريباً"
-            : $"Edit feature for {offer.Title} - Coming soon", Severity.Info);
+        var parameters = new DialogParameters
+        {
+            ["OfferID"] = offer.OfferID,
+            ["Title"] = offer.Title,
+            ["Description"] = offer.Description,
+            ["DiscountPercentage"] = offer.DiscountPercentage,
+            ["StartDate"] = offer.StartDate,
+            ["EndDate"] = offer.EndDate
+        };
+
+        var dialog = await DialogService.ShowAsync<EditOfferDialog>(
+            Localization.Get("dialog.edit_offer"),
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = false
+            });
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await LoadDataAsync();
+        }
     }
 
     private IEnumerable<OfferDto> GetFilteredOffers()
@@ -477,37 +500,67 @@ else
         return offersList.Count(o => GetOfferStatus(o) == status);
     }
 
-    private void ViewOffer(OfferDto offer)
+    private async Task ViewOffer(OfferDto offer)
     {
-        Snackbar.Add(Localization.IsArabic
-            ? $"عرض تفاصيل: {offer.Title}"
-            : $"Viewing details for: {offer.Title}", Severity.Info);
-    }
-
-    private async Task DeleteOffer(OfferDto offer)
-    {
-        var confirmed = await DialogService.ShowMessageBox(
-            Localization.Get("common.delete"),
-            Localization.IsArabic
-                ? $"هل أنت متأكد من حذف '{offer.Title}'؟ لا يمكن التراجع عن هذا الإجراء."
-                : $"Are you sure you want to delete '{offer.Title}'? This action cannot be undone.",
-            yesText: Localization.Get("common.delete"),
-            cancelText: Localization.Get("common.cancel"));
-
-        if (confirmed != true) return;
-
         try
         {
-            await ApiService.DeleteAsync($"/api/Offers/{offer.OfferID}");
-            Snackbar.Add(Localization.IsArabic
-                ? $"تم حذف العرض '{offer.Title}' بنجاح!"
-                : $"Offer '{offer.Title}' deleted successfully!", Severity.Success);
-            await LoadDataAsync();
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<OfferDetailsDialog.OfferDetailsDto>>($"/api/Offers/{offer.OfferID}");
+
+            if (response?.Data != null)
+            {
+                var parameters = new DialogParameters { ["OfferDetails"] = response.Data };
+                await DialogService.ShowAsync<OfferDetailsDialog>(
+                    Localization.Get("dialog.offer_details"),
+                    parameters,
+                    new DialogOptions
+                    {
+                        MaxWidth = MaxWidth.Medium,
+                        FullWidth = true
+                    });
+            }
         }
         catch (Exception ex)
         {
             Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
+    }
+
+    private async Task DeleteOffer(OfferDto offer)
+    {
+        var offerDto = new DeleteOfferDialog.OfferDto
+        {
+            OfferId = offer.OfferID,
+            Title = offer.Title,
+            Description = offer.Description,
+            DiscountPercentage = offer.DiscountPercentage,
+            StartDate = offer.StartDate,
+            EndDate = offer.EndDate,
+            Status = GetOfferStatus(offer)
+        };
+        
+        var parameters = new DialogParameters
+        {
+            ["Offer"] = offerDto
+        };
+
+        var dialog = await DialogService.ShowAsync<DeleteOfferDialog>(
+            Localization.Get("dialog.delete_offer"),
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = true
+            });
+
+        var result = await dialog.Result;
+        
+        if (result.Canceled)
+            return;
+
+        // The dialog already handled the deletion, just reload the data
+        await LoadDataAsync();
     }
 
     private async Task ExportToCSV()

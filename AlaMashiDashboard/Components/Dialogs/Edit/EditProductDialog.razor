@@ -1,6 +1,7 @@
 ﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
 @inject ApiService ApiService
 @using global::AdminDashboard.Services
+@using Microsoft.AspNetCore.Components.Forms
 @inject ISnackbar Snackbar
 @inject LocalizationService Localization
 
@@ -58,23 +59,50 @@
                 }
             </MudSelect>
 
-            <MudTextField @bind-Value="productForm.MainImageURL"
-                          Label="@Localization.Get("dialog.image_url")"
-                          Variant="Variant.Outlined"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Image"
-                          HelperText="@Localization.Get("dialog.image_helper")" />
+            <MudDivider Class="my-2" />
+
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                @Localization.Get("products.image")
+            </MudText>
 
             @if (!string.IsNullOrEmpty(productForm.MainImageURL))
             {
-                <MudCard Elevation="0" Outlined="true">
+                <MudCard Elevation="0" Outlined="true" Class="mb-3">
                     <MudCardContent Class="pa-2">
                         <MudImage Src="@productForm.MainImageURL" 
-                                  Height="150" 
+                                  Alt="@productForm.ProductName"
+                                  Height="200" 
                                   ObjectFit="ObjectFit.Contain"
                                   Class="rounded" />
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                            @Localization.Get("products.current_image")
+                        </MudText>
                     </MudCardContent>
                 </MudCard>
+            }
+
+            <MudFileUpload T="IBrowserFile" 
+                           FilesChanged="OnFileSelected"
+                           Accept="image/*">
+                <ButtonTemplate>
+                    <MudButton HtmlTag="label"
+                               Variant="Variant.Outlined"
+                               Color="Color.Primary"
+                               StartIcon="@Icons.Material.Filled.CloudUpload"
+                               for="@context">
+                        @(selectedFileName ?? Localization.Get("products.change_image"))
+                    </MudButton>
+                </ButtonTemplate>
+            </MudFileUpload>
+
+            @if (!string.IsNullOrEmpty(selectedFileName))
+            {
+                <MudChip Color="Color.Success" 
+                         Icon="@Icons.Material.Filled.CheckCircle"
+                         OnClose="ClearSelectedFile">
+                    @selectedFileName
+                </MudChip>
             }
 
             @if (validationErrors.Any())
@@ -113,6 +141,21 @@
     private List<CategoryOption> categories = new();
     private List<string> validationErrors = new();
     private bool isSubmitting = false;
+    private IBrowserFile? selectedFile;
+    private string? selectedFileName;
+    private bool _isRtl => Localization.IsArabic;
+
+    private void OnFileSelected(IBrowserFile file)
+    {
+        selectedFile = file;
+        selectedFileName = file.Name;
+    }
+
+    private void ClearSelectedFile()
+    {
+        selectedFile = null;
+        selectedFileName = null;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -159,7 +202,7 @@
         if (string.IsNullOrWhiteSpace(name))
             yield return Localization.Get("validation.required");
         else if (name.Length < 3 || name.Length > 100)
-            yield return Localization.IsArabic ? "يجب أن يكون بين 3 و 100 حرف" : "Must be between 3 and 100 characters";
+            yield return Localization.Get("validation.between_chars").Replace("{0}", "3").Replace("{1}", "100");
     }
 
     private IEnumerable<string> ValidateDescription(string desc)
@@ -167,7 +210,7 @@
         if (string.IsNullOrWhiteSpace(desc))
             yield return Localization.Get("validation.required");
         else if (desc.Length < 10 || desc.Length > 500)
-            yield return Localization.IsArabic ? "يجب أن يكون بين 10 و 500 حرف" : "Must be between 10 and 500 characters";
+            yield return Localization.Get("validation.between_chars").Replace("{0}", "10").Replace("{1}", "500");
     }
 
     private void ValidateForm()
@@ -185,26 +228,55 @@
         isSubmitting = true;
         try
         {
-            var updateRequest = new
+            // إذا في صورة جديدة، نستخدم MultipartFormData
+            if (selectedFile != null)
             {
-                productName = productForm.ProductName,
-                productDescription = productForm.ProductDescription,
-                price = productForm.Price,
-                quantityInStock = productForm.QuantityInStock,
-                categoryId = productForm.CategoryId,
-                mainImageURL = productForm.MainImageURL
-            };
+                using var content = new MultipartFormDataContent();
+                content.Add(new StringContent(productForm.ProductName), "productName");
+                content.Add(new StringContent(productForm.ProductDescription), "productDescription");
+                content.Add(new StringContent(productForm.Price.ToString()), "price");
+                content.Add(new StringContent(productForm.QuantityInStock.ToString()), "quantityInStock");
+                content.Add(new StringContent(productForm.CategoryId.ToString()), "categoryId");
 
-            var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Products/{ProductID}", updateRequest);
+                var fileContent = new StreamContent(selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
+                fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(selectedFile.ContentType);
+                content.Add(fileContent, "ProductImageFile", selectedFile.Name);
 
-            if (response?.Success == true)
-            {
-                Snackbar.Add(Localization.IsArabic ? "تم تحديث المنتج بنجاح!" : "Product updated successfully!", Severity.Success);
-                MudDialog.Close(DialogResult.Ok(true));
+                var response = await ApiService.PatchMultipartAsync<ApiService.ApiResponse<object>>($"/api/Products/{ProductID}", content);
+
+                if (response?.Success == true)
+                {
+                    Snackbar.Add(Localization.Get("common.product_updated"), Severity.Success);
+                    MudDialog.Close(DialogResult.Ok(true));
+                }
+                else
+                {
+                    Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+                }
             }
             else
             {
-                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+                // إذا ما فيش صورة جديدة، نستخدم PATCH عادي
+                var updateRequest = new
+                {
+                    productName = productForm.ProductName,
+                    productDescription = productForm.ProductDescription,
+                    price = productForm.Price,
+                    quantityInStock = productForm.QuantityInStock,
+                    categoryId = productForm.CategoryId
+                };
+
+                var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Products/{ProductID}", updateRequest);
+
+                if (response?.Success == true)
+                {
+                    Snackbar.Add(Localization.Get("common.product_updated"), Severity.Success);
+                    MudDialog.Close(DialogResult.Ok(true));
+                }
+                else
+                {
+                    Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+                }
             }
         }
         catch (Exception ex)

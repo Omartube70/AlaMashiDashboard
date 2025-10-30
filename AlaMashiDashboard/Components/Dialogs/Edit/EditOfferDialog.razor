@@ -112,7 +112,7 @@
         if (string.IsNullOrWhiteSpace(title))
             yield return Localization.Get("validation.required");
         else if (title.Length < 3 || title.Length > 100)
-            yield return Localization.IsArabic ? "يجب أن يكون بين 3 و 100 حرف" : "Must be between 3 and 100 characters";
+            yield return Localization.Get("validation.between_chars").Replace("{0}", "3").Replace("{1}", "100");
     }
 
     private IEnumerable<string> ValidateDescription(string desc)
@@ -120,7 +120,7 @@
         if (string.IsNullOrWhiteSpace(desc))
             yield return Localization.Get("validation.required");
         else if (desc.Length < 10 || desc.Length > 500)
-            yield return Localization.IsArabic ? "يجب أن يكون بين 10 و 500 حرف" : "Must be between 10 and 500 characters";
+            yield return Localization.Get("validation.between_chars").Replace("{0}", "10").Replace("{1}", "500");
     }
 
     private void ValidateForm()
@@ -130,9 +130,9 @@
         validationErrors.AddRange(ValidateDescription(offerForm.Description));
 
         if (!offerForm.StartDate.HasValue || !offerForm.EndDate.HasValue)
-            validationErrors.Add(Localization.IsArabic ? "التواريخ مطلوبة" : "Dates are required");
+            validationErrors.Add(Localization.Get("validation.dates_required"));
         else if (offerForm.StartDate > offerForm.EndDate)
-            validationErrors.Add(Localization.IsArabic ? "تاريخ النهاية يجب أن يكون بعد تاريخ البداية" : "End date must be after start date");
+            validationErrors.Add(Localization.Get("validation.end_after_start"));
     }
 
     private async Task Submit()
@@ -156,7 +156,7 @@
 
             if (response?.Success == true)
             {
-                Snackbar.Add(Localization.IsArabic ? "تم تحديث العرض بنجاح!" : "Offer updated successfully!", Severity.Success);
+                Snackbar.Add(Localization.Get("common.offer_updated"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));
             }
             else

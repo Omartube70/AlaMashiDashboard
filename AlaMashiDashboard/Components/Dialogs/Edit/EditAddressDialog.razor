@@ -1,0 +1,197 @@
+﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.edit_address")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-2">
+            <MudTextField @bind-Value="addressForm.Street"
+                          Label="@Localization.Get("addresses.street")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Home"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateStreet))" />
+
+            <MudTextField @bind-Value="addressForm.City"
+                          Label="@Localization.Get("addresses.city")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.LocationCity"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateCity))" />
+
+            <MudTextField @bind-Value="addressForm.AddressDetails"
+                          Label="@Localization.Get("addresses.details")"
+                          Variant="Variant.Outlined"
+                          Lines="3"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Description"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateDetails))" />
+
+            <MudSelect @bind-Value="addressForm.AddressType"
+                       Label="@Localization.Get("addresses.type")"
+                       Variant="Variant.Outlined"
+                       Adornment="Adornment.Start"
+                       AdornmentIcon="@Icons.Material.Filled.Category">
+                <MudSelectItem Value="1">
+                    <div class="d-flex align-center gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small" Color="Color.Info" />
+                        @Localization.Get("addresses.home")
+                    </div>
+                </MudSelectItem>
+                <MudSelectItem Value="2">
+                    <div class="d-flex align-center gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Work" Size="Size.Small" Color="Color.Warning" />
+                        @Localization.Get("addresses.work")
+                    </div>
+                </MudSelectItem>
+                <MudSelectItem Value="3">
+                    <div class="d-flex align-center gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Color="Color.Secondary" />
+                        @Localization.Get("addresses.other")
+                    </div>
+                </MudSelectItem>
+            </MudSelect>
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>• @error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Info" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Save">
+            @if (isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span class="ml-2">@Localization.Get("dialog.updating")</span>
+            }
+            else
+            {
+                @Localization.Get("dialog.update")
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public int AddressId { get; set; }
+    [Parameter] public string Street { get; set; } = string.Empty;
+    [Parameter] public string City { get; set; } = string.Empty;
+    [Parameter] public string AddressDetails { get; set; } = string.Empty;
+    [Parameter] public int AddressType { get; set; }
+
+    private UpdateAddressForm addressForm = new();
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    protected override void OnInitialized()
+    {
+        addressForm = new UpdateAddressForm
+        {
+            Street = Street,
+            City = City,
+            AddressDetails = AddressDetails,
+            AddressType = AddressType
+        };
+    }
+
+    public class UpdateAddressForm
+    {
+        public string Street { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string AddressDetails { get; set; } = string.Empty;
+        public int AddressType { get; set; }
+    }
+
+    private IEnumerable<string> ValidateStreet(string street)
+    {
+        if (string.IsNullOrWhiteSpace(street))
+            yield return Localization.Get("validation.required");
+        else if (street.Length < 3 || street.Length > 100)
+            yield return Localization.IsArabic ? "يجب أن يكون بين 3 و 100 حرف" : "Must be between 3 and 100 characters";
+    }
+
+    private IEnumerable<string> ValidateCity(string city)
+    {
+        if (string.IsNullOrWhiteSpace(city))
+            yield return Localization.Get("validation.required");
+        else if (city.Length < 2 || city.Length > 50)
+            yield return Localization.IsArabic ? "يجب أن يكون بين 2 و 50 حرف" : "Must be between 2 and 50 characters";
+    }
+
+    private IEnumerable<string> ValidateDetails(string details)
+    {
+        if (string.IsNullOrWhiteSpace(details))
+            yield return Localization.Get("validation.required");
+        else if (details.Length < 5 || details.Length > 200)
+            yield return Localization.IsArabic ? "يجب أن يكون بين 5 و 200 حرف" : "Must be between 5 and 200 characters";
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidateStreet(addressForm.Street));
+        validationErrors.AddRange(ValidateCity(addressForm.City));
+        validationErrors.AddRange(ValidateDetails(addressForm.AddressDetails));
+    }
+
+    private async Task Submit()
+    {
+        ValidateForm();
+        if (validationErrors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            // Create JSON Patch document with explicit int value
+            var patchDocument = new[]
+            {
+                new { op = "replace", path = "/street", value = (object)addressForm.Street },
+                new { op = "replace", path = "/city", value = (object)addressForm.City },
+                new { op = "replace", path = "/addressDetails", value = (object)addressForm.AddressDetails },
+                new { op = "replace", path = "/addressType", value = (object)addressForm.AddressType }
+            };
+
+            var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Addresses/{AddressId}", patchDocument);
+
+            if (response?.Success == true)
+            {
+                Snackbar.Add(Localization.IsArabic ? "تم تحديث العنوان بنجاح!" : "Address updated successfully!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

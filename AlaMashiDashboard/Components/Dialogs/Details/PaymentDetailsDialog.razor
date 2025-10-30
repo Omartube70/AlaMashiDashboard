@@ -1,0 +1,241 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Payment" Color="Color.Success" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.payment_details")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="max-height: 70vh; overflow-y: auto;">
+            @* معلومات الدفع الرئيسية *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-4">
+                <div class="d-flex align-center justify-space-between mb-4">
+                    <div class="d-flex align-center gap-3">
+                        <MudAvatar Color="Color.Success" Size="Size.Large" Variant="Variant.Filled">
+                            <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Large" />
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold" Color="Color.Success">
+                                @PaymentDetails.Amount.ToString("N2") @Localization.Get("units.egp")
+                            </MudText>
+                            <MudChip Size="Size.Small" Color="@GetStatusColor(PaymentDetails.PaymentStatus)">
+                                @GetLocalizedStatus(PaymentDetails.PaymentStatus)
+                            </MudChip>
+                        </div>
+                    </div>
+                    <MudChip Size="Size.Medium" Color="Color.Primary">#@PaymentDetails.PaymentId</MudChip>
+                </div>
+
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.CreditCard" Color="Color.Info" />
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("payments.payment_method")</MudText>
+                            </div>
+                            <MudChip Size="Size.Small" Color="Color.Info" Icon="@GetPaymentMethodIcon(PaymentDetails.PaymentMethod)">
+                                @PaymentDetails.PaymentMethod
+                            </MudChip>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Color="Color.Warning" />
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("payments.payment_date")</MudText>
+                            </div>
+                            <MudText Typo="Typo.body1" Class="font-weight-medium">
+                                @PaymentDetails.PaymentDate.ToString("dd MMMM yyyy")
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @PaymentDetails.PaymentDate.ToString("hh:mm tt")
+                            </MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    @if (!string.IsNullOrEmpty(PaymentDetails.TransactionId))
+                    {
+                        <MudItem xs="12">
+                            <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                                <div class="d-flex align-center gap-2 mb-2">
+                                    <MudIcon Icon="@Icons.Material.Filled.Receipt" Color="Color.Secondary" />
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("payments.transaction_id")</MudText>
+                                </div>
+                                <MudText Typo="Typo.body1" Class="font-weight-medium" Style="font-family: monospace;">
+                                    @PaymentDetails.TransactionId
+                                </MudText>
+                            </MudPaper>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudPaper>
+
+            @* معلومات الطلب المرتبط *@
+            @if (PaymentDetails.Order != null)
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.linked_order")
+                    </MudText>
+                    <MudCard Elevation="0" Outlined="true">
+                        <MudCardContent Class="pa-3">
+                            <MudGrid Spacing="2">
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("orders.order_id")</MudText>
+                                    <MudChip Size="Size.Small" Color="Color.Primary">#@PaymentDetails.Order.OrderId</MudChip>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("orders.status")</MudText>
+                                    <MudChip Size="Size.Small" Color="@GetOrderStatusColor(PaymentDetails.Order.Status)">
+                                        @PaymentDetails.Order.Status
+                                    </MudChip>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("orders.order_date")</MudText>
+                                    <MudText Typo="Typo.body2">@PaymentDetails.Order.OrderDate.ToString("dd MMM yyyy")</MudText>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("orders.total_amount")</MudText>
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
+                                        @PaymentDetails.Order.TotalAmount.ToString("N2") @Localization.Get("units.egp")
+                                    </MudText>
+                                </MudItem>
+                            </MudGrid>
+                        </MudCardContent>
+                    </MudCard>
+                </MudPaper>
+            }
+
+            @* معلومات العميل *@
+            @if (PaymentDetails.User != null)
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Info" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.customer_info")
+                    </MudText>
+                    <div class="d-flex align-center gap-3">
+                        <MudAvatar Color="Color.Info" Size="Size.Medium">
+                            @PaymentDetails.User.UserName?.Substring(0, 1).ToUpper()
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.body1" Class="font-weight-medium">@PaymentDetails.User.UserName</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                <MudIcon Icon="@Icons.Material.Filled.Email" Size="Size.Small" />
+                                @PaymentDetails.User.Email
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
+                                @PaymentDetails.User.Phone
+                            </MudText>
+                        </div>
+                    </div>
+                </MudPaper>
+            }
+
+            @* تفاصيل إضافية *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="background-color: var(--mud-palette-info-lighten);">
+                <MudText Typo="Typo.h6" Color="Color.Info" Class="mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("dialog.payment_summary")
+                </MudText>
+                <MudDivider Class="my-2" />
+                <div class="d-flex justify-space-between align-center pa-2">
+                    <MudText Typo="Typo.body1">@Localization.Get("payments.amount")</MudText>
+                    <MudText Typo="Typo.h6" Class="font-weight-bold" Color="Color.Success">
+                        @PaymentDetails.Amount.ToString("N2") @Localization.Get("units.egp")
+                    </MudText>
+                </div>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.close")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .text-center {
+        text-align: center;
+    }
+</style>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public PaymentDetailsDto PaymentDetails { get; set; } = null!;
+
+    private bool _isRtl => Localization.IsArabic;
+
+    private void Close() => MudDialog.Close();
+
+    private string GetLocalizedStatus(string status) => status switch
+    {
+        "Completed" => Localization.Get("payments.completed"),
+        "Pending" => Localization.Get("payments.pending"),
+        "Failed" => Localization.Get("payments.failed"),
+        _ => status
+    };
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Completed" => Color.Success,
+        "Pending" => Color.Warning,
+        "Failed" => Color.Error,
+        _ => Color.Default
+    };
+
+    private Color GetOrderStatusColor(string status) => status switch
+    {
+        "Pending" => Color.Warning,
+        "InPreparation" => Color.Info,
+        "OutForDelivery" => Color.Secondary,
+        "Delivered" => Color.Success,
+        "Canceled" => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetPaymentMethodIcon(string method) => method switch
+    {
+        "Cash" => Icons.Material.Filled.Money,
+        "CreditCard" => Icons.Material.Filled.CreditCard,
+        "DebitCard" => Icons.Material.Filled.CreditCard,
+        _ => Icons.Material.Filled.Payment
+    };
+
+    public class PaymentDetailsDto
+    {
+        [JsonPropertyName("paymentId")] public int PaymentId { get; set; }
+        [JsonPropertyName("amount")] public decimal Amount { get; set; }
+        [JsonPropertyName("paymentDate")] public DateTime PaymentDate { get; set; }
+        [JsonPropertyName("paymentMethod")] public string PaymentMethod { get; set; } = string.Empty;
+        [JsonPropertyName("paymentStatus")] public string PaymentStatus { get; set; } = string.Empty;
+        [JsonPropertyName("transactionId")] public string TransactionId { get; set; } = string.Empty;
+        [JsonPropertyName("order")] public OrderDto? Order { get; set; }
+        [JsonPropertyName("user")] public UserDto? User { get; set; }
+    }
+
+    public class OrderDto
+    {
+        [JsonPropertyName("orderId")] public int OrderId { get; set; }
+        [JsonPropertyName("orderDate")] public DateTime OrderDate { get; set; }
+        [JsonPropertyName("totalAmount")] public decimal TotalAmount { get; set; }
+        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+    }
+
+    public class UserDto
+    {
+        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
+        [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("phone")] public string Phone { get; set; } = string.Empty;
+    }
+}

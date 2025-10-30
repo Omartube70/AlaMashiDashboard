@@ -1,0 +1,172 @@
+﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@using System.Text.RegularExpressions
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.edit_user")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-2">
+            <MudTextField @bind-Value="userForm.UserName"
+                          Label="@Localization.Get("users.username")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Person"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateUserName))" />
+
+            <MudTextField @bind-Value="userForm.Email"
+                          Label="@Localization.Get("users.email")"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Email"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateEmail))" />
+
+            <MudTextField @bind-Value="userForm.Phone"
+                          Label="@Localization.Get("users.phone")"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Text"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Phone"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidatePhone))" />
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>• @error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Info" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Save">
+            @if (isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span class="ml-2">@Localization.Get("dialog.updating")</span>
+            }
+            else
+            {
+                @Localization.Get("dialog.update")
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public int UserId { get; set; }
+    [Parameter] public string UserName { get; set; } = string.Empty;
+    [Parameter] public string Email { get; set; } = string.Empty;
+    [Parameter] public string Phone { get; set; } = string.Empty;
+
+    private UpdateUserForm userForm = new();
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    protected override void OnInitialized()
+    {
+        userForm = new UpdateUserForm
+        {
+            UserName = UserName,
+            Email = Email,
+            Phone = Phone
+        };
+    }
+
+    public class UpdateUserForm
+    {
+        public string UserName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+    }
+
+    private IEnumerable<string> ValidateUserName(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+            yield return Localization.Get("validation.required");
+        else if (username.Length < 3)
+            yield return Localization.Get("validation.username_min");
+        else if (username.Length > 50)
+            yield return Localization.Get("validation.username_max");
+    }
+
+    private IEnumerable<string> ValidateEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            yield return Localization.Get("validation.required");
+        else if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            yield return Localization.Get("validation.invalid_email");
+    }
+
+    private IEnumerable<string> ValidatePhone(string phone)
+    {
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            if (!Regex.IsMatch(phone, @"^\d{10,}$"))
+                yield return Localization.Get("validation.phone_min");
+        }
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidateUserName(userForm.UserName));
+        validationErrors.AddRange(ValidateEmail(userForm.Email));
+        validationErrors.AddRange(ValidatePhone(userForm.Phone));
+    }
+
+    private async Task Submit()
+    {
+        ValidateForm();
+        if (validationErrors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            var updateRequest = new
+            {
+                userName = userForm.UserName,
+                email = userForm.Email,
+                phone = userForm.Phone
+            };
+
+            var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Users/{UserId}", updateRequest);
+
+            if (response?.Success == true)
+            {
+                Snackbar.Add(Localization.Get("common.user_updated"), Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

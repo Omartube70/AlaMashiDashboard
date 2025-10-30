@@ -85,7 +85,6 @@ else if (categoriesList != null && categoriesList.Any())
                         </MudTableSortLabel>
                     </MudTh>
                     <MudTh>@Localization.Get("categories.icon")</MudTh>
-                    <MudTh>@Localization.Get("categories.parent")</MudTh>
                     <MudTh Style="text-align: right;">@Localization.Get("common.actions")</MudTh>
                 </HeaderContent>
 
@@ -105,16 +104,6 @@ else if (categoriesList != null && categoriesList.Any())
                         <MudChip Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.Image">
                             @context.IconName
                         </MudChip>
-                    </MudTd>
-                    <MudTd DataLabel="@Localization.Get("categories.parent")">
-                        @if (context.ParentId.HasValue)
-                        {
-                            <MudChip Size="Size.Small" Color="Color.Secondary">ID: @context.ParentId</MudChip>
-                        }
-                        else
-                        {
-                            <MudChip Size="Size.Small" Color="Color.Default">@Localization.Get("categories.root")</MudChip>
-                        }
                     </MudTd>
                     <MudTd DataLabel="@Localization.Get("common.actions")" Style="text-align: right;">
                         <MudTooltip Text="@Localization.Get("common.view")">
@@ -155,10 +144,6 @@ else if (categoriesList != null && categoriesList.Any())
             <MudText Typo="Typo.body2" Color="Color.Secondary">
                 <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
                 @Localization.Get("categories.showing"): <strong>@GetFilteredCategories().Count()</strong>
-            </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">
-                <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
-                @Localization.Get("categories.root_count"): <strong>@categoriesList.Count(c => !c.ParentId.HasValue)</strong>
             </MudText>
         </div>
     </MudPaper>
@@ -372,51 +357,90 @@ else
         }
     }
 
-    private void OpenEditDialog(CategoryDto category)
+    private async Task OpenEditDialog(CategoryDto category)
     {
-        Snackbar.Add(Localization.IsArabic
-            ? $"ميزة التعديل لـ {category.CategoryName} - قريباً"
-            : $"Edit feature for {category.CategoryName} - Coming soon", Severity.Info);
+        var parameters = new DialogParameters
+        {
+            ["CategoryId"] = category.CategoryId,
+            ["CategoryName"] = category.CategoryName,
+            ["IconName"] = category.IconName
+        };
+
+        var dialog = await DialogService.ShowAsync<EditCategoryDialog>(
+            Localization.Get("dialog.edit_category"),
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = false
+            });
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await LoadDataAsync();
+        }
     }
 
-    private void ViewCategory(CategoryDto category)
+    private async Task ViewCategory(CategoryDto category)
     {
-        Snackbar.Add(Localization.IsArabic
-            ? $"عرض: {category.CategoryName}"
-            : $"Viewing: {category.CategoryName}", Severity.Info);
-    }
-
-    private async Task DeleteCategory(CategoryDto category)
-    {
-        var confirmed = await DialogService.ShowMessageBox(
-            Localization.Get("common.delete"),
-            Localization.IsArabic
-                ? $"هل أنت متأكد من حذف '{category.CategoryName}'؟ لا يمكن التراجع عن هذا الإجراء."
-                : $"Are you sure you want to delete '{category.CategoryName}'? This action cannot be undone.",
-            yesText: Localization.Get("common.delete"),
-            cancelText: Localization.Get("common.cancel"));
-
-        if (confirmed != true) return;
-
         try
         {
-            var deleted = await ApiService.DeleteAsync($"/api/Categories/{category.CategoryId}");
-            if (deleted)
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<CategoryDetailsDialog.CategoryDetailsDto>>($"/api/Categories/{category.CategoryId}");
+
+            if (response?.Data != null)
             {
-                Snackbar.Add(Localization.IsArabic
-                    ? $"تم حذف التصنيف '{category.CategoryName}' بنجاح!"
-                    : $"Category '{category.CategoryName}' deleted successfully!", Severity.Success);
-                await LoadDataAsync();
-            }
-            else
-            {
-                Snackbar.Add(Localization.Get("common.failed"), Severity.Error);
+                var parameters = new DialogParameters { ["CategoryDetails"] = response.Data };
+                await DialogService.ShowAsync<CategoryDetailsDialog>(
+                    Localization.Get("dialog.category_details"),
+                    parameters,
+                    new DialogOptions
+                    {
+                        MaxWidth = MaxWidth.Medium,
+                        FullWidth = true
+                    });
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
+    }
+
+    private async Task DeleteCategory(CategoryDto category)
+    {
+        var categoryDto = new DeleteCategoryDialog.CategoryDto
+        {
+            CategoryId = category.CategoryId,
+            CategoryName = category.CategoryName,
+            IconName = category.IconName
+        };
+        
+        var parameters = new DialogParameters
+        {
+            ["Category"] = categoryDto
+        };
+
+        var dialog = await DialogService.ShowAsync<DeleteCategoryDialog>(
+            Localization.Get("dialog.delete_category"),
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = true
+            });
+
+        var result = await dialog.Result;
+        
+        if (result.Canceled)
+            return;
+
+        // The dialog already handled the deletion, just reload the data
+        await LoadDataAsync();
     }
 
     public class CategoryDto
@@ -424,6 +448,5 @@ else
         [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
         [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
         [JsonPropertyName("iconName")] public string IconName { get; set; } = string.Empty;
-        [JsonPropertyName("parentId")] public int? ParentId { get; set; }
     }
 }

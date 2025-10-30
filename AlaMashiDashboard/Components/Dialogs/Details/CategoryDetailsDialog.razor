@@ -1,0 +1,177 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Category" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.category_details")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="max-height: 70vh; overflow-y: auto;">
+            @* معلومات التصنيف الأساسية *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-4" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                <div class="d-flex align-center gap-3 mb-2">
+                    <MudAvatar Color="Color.Surface" Size="Size.Large" Variant="Variant.Filled">
+                        <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Large" Style="color: #667eea;" />
+                    </MudAvatar>
+                    <div>
+                        <MudText Typo="Typo.h4" Style="color: white;" Class="font-weight-bold">@CategoryDetails.CategoryName</MudText>
+                        <MudChip Size="Size.Small" Style="background-color: rgba(255,255,255,0.3); color: white;">
+                            #@CategoryDetails.CategoryId
+                        </MudChip>
+                    </div>
+                </div>
+            </MudPaper>
+
+            @* معلومات التصنيف *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-4">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-primary-lighten);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Tag" Color="Color.Primary" />
+                                <MudText Typo="Typo.caption" Color="Color.Primary">@Localization.Get("categories.id")</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold">#@CategoryDetails.CategoryId</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-info-lighten);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Image" Color="Color.Info" />
+                                <MudText Typo="Typo.caption" Color="Color.Info">@Localization.Get("categories.icon")</MudText>
+                            </div>
+                            <MudChip Size="Size.Medium" Color="Color.Info" Icon="@Icons.Material.Filled.Image">
+                                @CategoryDetails.IconName
+                            </MudChip>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-success-lighten);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Label" Color="Color.Success" />
+                                <MudText Typo="Typo.caption" Color="Color.Success">@Localization.Get("categories.name")</MudText>
+                            </div>
+                            <MudText Typo="Typo.h6" Class="font-weight-bold">@CategoryDetails.CategoryName</MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @* المنتجات في هذا التصنيف *@
+            @if (CategoryDetails.Products != null && CategoryDetails.Products.Any())
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.products_in_category") (@CategoryDetails.Products.Count)
+                    </MudText>
+                    <MudSimpleTable Dense="true" Hover="true" Bordered="true">
+                        <thead>
+                            <tr>
+                                <th>@Localization.Get("products.name")</th>
+                                <th class="text-center">@Localization.Get("products.price")</th>
+                                <th class="text-center">@Localization.Get("products.stock")</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var product in CategoryDetails.Products.Take(10))
+                            {
+                                <tr>
+                                    <td>
+                                        <MudText Typo="Typo.body2" Class="font-weight-medium">@product.ProductName</MudText>
+                                    </td>
+                                    <td class="text-center">
+                                        <MudText Typo="Typo.body2" Color="Color.Success" Class="font-weight-bold">
+                                            @product.Price.ToString("N2") @Localization.Get("units.egp")
+                                        </MudText>
+                                    </td>
+                                    <td class="text-center">
+                                        <MudChip Size="Size.Small" Color="@(product.QuantityInStock > 10 ? Color.Success : Color.Warning)">
+                                            @product.QuantityInStock
+                                        </MudChip>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                    @if (CategoryDetails.Products.Count > 10)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                            @Localization.Get("dialog.showing_first_10_products")
+                        </MudText>
+                    }
+                </MudPaper>
+            }
+
+            @* إحصائيات التصنيف *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                <MudText Typo="Typo.h6" Class="mb-3" Style="color: white;">
+                    <MudIcon Icon="@Icons.Material.Filled.Analytics" Style="color: white;" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("dialog.category_summary")
+                </MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="6">
+                        <div class="text-center">
+                            <MudText Typo="Typo.h5" Style="color: white;">@(CategoryDetails.Products?.Count ?? 0)</MudText>
+                            <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.9);">@Localization.Get("dialog.total_products")</MudText>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <div class="text-center">
+                            <MudText Typo="Typo.h5" Style="color: white;">@GetTotalStock()</MudText>
+                            <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.9);">@Localization.Get("dialog.total_stock")</MudText>
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.close")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .text-center {
+        text-align: center;
+    }
+</style>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public CategoryDetailsDto CategoryDetails { get; set; } = null!;
+
+    private bool _isRtl => Localization.IsArabic;
+
+    private void Close() => MudDialog.Close();
+
+    private int GetTotalStock()
+    {
+        return CategoryDetails.Products?.Sum(p => p.QuantityInStock) ?? 0;
+    }
+
+    public class CategoryDetailsDto
+    {
+        [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("iconName")] public string IconName { get; set; } = string.Empty;
+        [JsonPropertyName("products")] public List<ProductDto>? Products { get; set; }
+    }
+
+    public class ProductDto
+    {
+        [JsonPropertyName("productName")] public string ProductName { get; set; } = string.Empty;
+        [JsonPropertyName("price")] public decimal Price { get; set; }
+        [JsonPropertyName("quantityInStock")] public int QuantityInStock { get; set; }
+    }
+}

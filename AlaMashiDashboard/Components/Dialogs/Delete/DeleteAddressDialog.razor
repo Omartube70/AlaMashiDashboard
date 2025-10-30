@@ -1,0 +1,191 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.delete_address")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-2">
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4">
+                <MudText Typo="Typo.body1" Class="font-weight-medium">
+                    @Localization.Get("dialog.delete_warning")
+                </MudText>
+            </MudAlert>
+
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudStack Spacing="3">
+                    <div class="d-flex align-center">
+                        <MudAvatar Size="Size.Medium" Color="Color.Primary" Class="@(_isRtl ? "ml-3" : "mr-3")">
+                            <MudIcon Icon="@Icons.Material.Filled.LocationOn" />
+                        </MudAvatar>
+                        <MudStack>
+                            <MudText Typo="Typo.h6">@Localization.Get("addresses.user"): @Address.UserName</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("addresses.type"): @GetLocalizedAddressType(Address.AddressType)</MudText>
+                        </MudStack>
+                    </div>
+                    
+                    <MudDivider />
+                    
+                    <MudGrid>
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("addresses.id")</MudText>
+                            <MudText Typo="Typo.body1">@Address.AddressId</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("addresses.city")</MudText>
+                            <MudText Typo="Typo.body1">@Address.City</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("addresses.street")</MudText>
+                            <MudText Typo="Typo.body1">@Address.Street</MudText>
+                        </MudItem>
+                        @if (!string.IsNullOrEmpty(Address.AddressDetails))
+                        {
+                            <MudItem xs="12">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("addresses.details")</MudText>
+                                <MudText Typo="Typo.body1">@Address.AddressDetails</MudText>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudStack>
+            </MudPaper>
+
+            <MudDivider />
+
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Localization.Get("dialog.admin_password_required")
+            </MudText>
+
+            <MudTextField @bind-Value="adminPassword"
+                          Label="@Localization.Get("dialog.admin_password")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Lock"
+                          Type="InputType.Password"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidatePassword))" />
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>• @error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Confirm" Variant="Variant.Filled" Color="Color.Error" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Delete">
+            @(isSubmitting ? Localization.Get("dialog.deleting") : Localization.Get("common.delete"))
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public AddressDto Address { get; set; } = new();
+    
+    private bool _isRtl => Localization.IsArabic;
+    private string adminPassword = string.Empty;
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    public class AddressDto
+    {
+        public int AddressId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string Street { get; set; } = string.Empty;
+        public string AddressDetails { get; set; } = string.Empty;
+        public string AddressType { get; set; } = string.Empty;
+    }
+
+    private string GetLocalizedAddressType(string type)
+    {
+        if (Localization.IsArabic)
+        {
+            return type.ToLower() switch
+            {
+                "home" => "المنزل",
+                "work" => "العمل",
+                "other" => "أخرى",
+                _ => type
+            };
+        }
+        else
+        {
+            return type.ToLower() switch
+            {
+                "home" => "Home",
+                "work" => "Work",
+                "other" => "Other",
+                _ => type
+            };
+        }
+    }
+
+    private IEnumerable<string> ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            yield return Localization.Get("validation.required");
+        else if (password.Length < 4)
+            yield return Localization.IsArabic ? "كلمة المرور يجب أن تكون 4 أحرف على الأقل" : "Password must be at least 4 characters";
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidatePassword(adminPassword));
+    }
+
+    private async Task Confirm()
+    {
+        ValidateForm();
+        if (validationErrors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            // Here you would typically validate the admin password against your API
+            // For now, we'll just close the dialog with the password
+            var result = new DeleteAddressResult
+            {
+                Confirmed = true,
+                AdminPassword = adminPassword,
+                AddressId = Address.AddressId
+            };
+            
+            MudDialog.Close(DialogResult.Ok(result));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    public class DeleteAddressResult
+    {
+        public bool Confirmed { get; set; }
+        public string AdminPassword { get; set; } = string.Empty;
+        public int AddressId { get; set; }
+    }
+}

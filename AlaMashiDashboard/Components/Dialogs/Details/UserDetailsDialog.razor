@@ -1,0 +1,201 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.user_details")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="max-height: 70vh; overflow-y: auto;">
+            @* معلومات المستخدم الأساسية *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                <div class="d-flex align-center gap-3 mb-4">
+                    <MudAvatar Color="@(UserDetails.UserRole == "Admin" ? Color.Error : Color.Primary)" Size="Size.Large">
+                        @UserDetails.UserName?.Substring(0, 1).ToUpper()
+                    </MudAvatar>
+                    <div>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@UserDetails.UserName</MudText>
+                        <MudChip Size="Size.Small" Color="@(UserDetails.UserRole == "Admin" ? Color.Error : Color.Default)" Icon="@(UserDetails.UserRole == "Admin" ? Icons.Material.Filled.AdminPanelSettings : Icons.Material.Filled.Person)">
+                            @(UserDetails.UserRole == "Admin" ? Localization.Get("users.admin") : Localization.Get("users.user"))
+                        </MudChip>
+                    </div>
+                </div>
+
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Badge" Color="Color.Info" />
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("users.id")</MudText>
+                            </div>
+                            <MudText Typo="Typo.body1" Class="font-weight-medium">#@UserDetails.UserId</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Email" Color="Color.Info" />
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("users.email")</MudText>
+                            </div>
+                            <MudText Typo="Typo.body1" Class="font-weight-medium">@UserDetails.Email</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Phone" Color="Color.Success" />
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("users.phone")</MudText>
+                            </div>
+                            <MudText Typo="Typo.body1" Class="font-weight-medium" dir="ltr">@UserDetails.Phone</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-background-grey);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Shield" Color="Color.Warning" />
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("users.role")</MudText>
+                            </div>
+                            <MudChip Size="Size.Small" Color="@(UserDetails.UserRole == "Admin" ? Color.Error : Color.Primary)">
+                                @(UserDetails.UserRole == "Admin" ? Localization.Get("users.admin") : Localization.Get("users.user"))
+                            </MudChip>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @* عناوين المستخدم *@
+            @if (UserDetails.Addresses != null && UserDetails.Addresses.Any())
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Info" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.addresses") (@UserDetails.Addresses.Count)
+                    </MudText>
+                    <MudStack Spacing="2">
+                        @foreach (var address in UserDetails.Addresses)
+                        {
+                            <MudCard Elevation="0" Outlined="true">
+                                <MudCardContent Class="pa-3">
+                                    <div class="d-flex align-center gap-2 mb-2">
+                                        <MudIcon Icon="@Icons.Material.Filled.Home" Color="Color.Primary" Size="Size.Small" />
+                                        <MudChip Size="Size.Small" Color="Color.Info">@address.AddressType</MudChip>
+                                    </div>
+                                    <MudText Typo="Typo.body2" Class="mb-1">
+                                        <strong>@Localization.Get("addresses.city"):</strong> @address.City
+                                    </MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1">
+                                        <strong>@Localization.Get("addresses.street"):</strong> @address.Street
+                                    </MudText>
+                                    <MudText Typo="Typo.body2">
+                                        <strong>@Localization.Get("addresses.details"):</strong> @address.AddressDetails
+                                    </MudText>
+                                </MudCardContent>
+                            </MudCard>
+                        }
+                    </MudStack>
+                </MudPaper>
+            }
+
+            @* طلبات المستخدم *@
+            @if (UserDetails.Orders != null && UserDetails.Orders.Any())
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Success" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.recent_orders") (@UserDetails.Orders.Count)
+                    </MudText>
+                    <MudSimpleTable Dense="true" Hover="true" Bordered="true">
+                        <thead>
+                            <tr>
+                                <th>@Localization.Get("orders.order_id")</th>
+                                <th>@Localization.Get("orders.order_date")</th>
+                                <th class="text-center">@Localization.Get("orders.total_amount")</th>
+                                <th class="text-center">@Localization.Get("orders.status")</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in UserDetails.Orders.Take(5))
+                            {
+                                <tr>
+                                    <td><MudChip Size="Size.Small" Color="Color.Primary">#@order.OrderId</MudChip></td>
+                                    <td>@order.OrderDate.ToString("dd MMM yyyy")</td>
+                                    <td class="text-center font-weight-bold">@order.TotalAmount.ToString("N2") @Localization.Get("units.egp")</td>
+                                    <td class="text-center">
+                                        <MudChip Size="Size.Small" Color="@GetOrderStatusColor(order.Status)">@order.Status</MudChip>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudPaper>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.close")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .text-center {
+        text-align: center;
+    }
+</style>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public UserDetailsDto UserDetails { get; set; } = null!;
+
+    private bool _isRtl => Localization.IsArabic;
+
+    private void Close() => MudDialog.Close();
+
+    private Color GetOrderStatusColor(string status) => status switch
+    {
+        "Pending" => Color.Warning,
+        "InPreparation" => Color.Info,
+        "OutForDelivery" => Color.Secondary,
+        "Delivered" => Color.Success,
+        "Canceled" => Color.Error,
+        _ => Color.Default
+    };
+
+    public class UserDetailsDto
+    {
+        [JsonPropertyName("userId")] public int UserId { get; set; }
+        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
+        [JsonPropertyName("email")] public string Email { get; set; } = string.Empty;
+        [JsonPropertyName("phone")] public string Phone { get; set; } = string.Empty;
+        [JsonPropertyName("userRole")] public string UserRole { get; set; } = string.Empty;
+        [JsonPropertyName("addresses")] public List<AddressDto>? Addresses { get; set; }
+        [JsonPropertyName("orders")] public List<OrderDto>? Orders { get; set; }
+    }
+
+    public class AddressDto
+    {
+        [JsonPropertyName("addressId")] public int AddressId { get; set; }
+        [JsonPropertyName("street")] public string Street { get; set; } = string.Empty;
+        [JsonPropertyName("city")] public string City { get; set; } = string.Empty;
+        [JsonPropertyName("addressDetails")] public string AddressDetails { get; set; } = string.Empty;
+        [JsonPropertyName("addressType")] public string AddressType { get; set; } = string.Empty;
+    }
+
+    public class OrderDto
+    {
+        [JsonPropertyName("orderId")] public int OrderId { get; set; }
+        [JsonPropertyName("orderDate")] public DateTime OrderDate { get; set; }
+        [JsonPropertyName("totalAmount")] public decimal TotalAmount { get; set; }
+        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+    }
+}

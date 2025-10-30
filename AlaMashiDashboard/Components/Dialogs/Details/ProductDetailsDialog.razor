@@ -1,0 +1,201 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.product_details")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="max-height: 70vh; overflow-y: auto;">
+            @* صورة المنتج الرئيسية *@
+            @if (!string.IsNullOrEmpty(ProductDetails.MainImageURL))
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-2" Style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <MudImage Src="@ProductDetails.MainImageURL" 
+                              Alt="@ProductDetails.ProductName"
+                              ObjectFit="ObjectFit.Contain"
+                              Height="300"
+                              Class="rounded" 
+                              Style="background: white;" />
+                </MudPaper>
+            }
+
+            @* معلومات المنتج الأساسية *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-4">
+                <div class="d-flex align-center justify-space-between mb-3">
+                    <div>
+                        <MudText Typo="Typo.h5" Class="font-weight-bold">@ProductDetails.ProductName</MudText>
+                        <MudChip Size="Size.Small" Color="Color.Info" Icon="@Icons.Material.Filled.Category">
+                            @ProductDetails.CategoryName
+                        </MudChip>
+                    </div>
+                    <div class="text-end">
+                        <MudText Typo="Typo.h4" Color="Color.Success" Class="font-weight-bold">
+                            @ProductDetails.Price.ToString("N2") @Localization.Get("units.egp")
+                        </MudText>
+                        <MudChip Size="Size.Small" Color="Color.Primary">#@ProductDetails.ProductID</MudChip>
+                    </div>
+                </div>
+
+                <MudDivider Class="my-3" />
+
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Description" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("dialog.description")
+                </MudText>
+                <MudText Typo="Typo.body1" Class="mb-4">@ProductDetails.ProductDescription</MudText>
+
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-success-lighten);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Inventory" Color="Color.Success" />
+                                <MudText Typo="Typo.caption" Color="Color.Success">@Localization.Get("products.stock")</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold">@ProductDetails.QuantityInStock</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("units.pieces")</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-primary-lighten);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Color="Color.Primary" />
+                                <MudText Typo="Typo.caption" Color="Color.Primary">@Localization.Get("products.price")</MudText>
+                            </div>
+                            <MudText Typo="Typo.h5" Class="font-weight-bold">@ProductDetails.Price.ToString("N2")</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("units.egp")</MudText>
+                        </MudPaper>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="4">
+                        <MudPaper Elevation="0" Class="pa-3" Style="background-color: var(--mud-palette-info-lighten);">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Category" Color="Color.Info" />
+                                <MudText Typo="Typo.caption" Color="Color.Info">@Localization.Get("products.category")</MudText>
+                            </div>
+                            <MudText Typo="Typo.body1" Class="font-weight-bold">@ProductDetails.CategoryName</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">ID: @ProductDetails.CategoryId</MudText>
+                        </MudPaper>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @* معلومات إضافية *@
+            @if (ProductDetails.Orders != null && ProductDetails.Orders.Any())
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.recent_orders") (@ProductDetails.Orders.Count)
+                    </MudText>
+                    <MudSimpleTable Dense="true" Hover="true" Bordered="true">
+                        <thead>
+                            <tr>
+                                <th>@Localization.Get("orders.order_id")</th>
+                                <th>@Localization.Get("dialog.quantity")</th>
+                                <th>@Localization.Get("orders.order_date")</th>
+                                <th class="text-center">@Localization.Get("orders.total_amount")</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in ProductDetails.Orders.Take(5))
+                            {
+                                <tr>
+                                    <td><MudChip Size="Size.Small" Color="Color.Primary">#@order.OrderId</MudChip></td>
+                                    <td>@order.Quantity @Localization.Get("units.pieces")</td>
+                                    <td>@order.OrderDate.ToString("dd MMM yyyy")</td>
+                                    <td class="text-center font-weight-bold">@order.Subtotal.ToString("N2") @Localization.Get("units.egp")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                    @if (ProductDetails.Orders.Count > 5)
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                            @Localization.Get("dialog.showing_first_5_orders")
+                        </MudText>
+                    }
+                </MudPaper>
+            }
+
+            @* إحصائيات المنتج *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-3" Style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                <MudText Typo="Typo.h6" Class="mb-3" Style="color: white;">
+                    <MudIcon Icon="@Icons.Material.Filled.Analytics" Style="color: white;" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("dialog.product_summary")
+                </MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="4">
+                        <div class="text-center">
+                            <MudText Typo="Typo.h5" Style="color: white;">@ProductDetails.QuantityInStock</MudText>
+                            <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.9);">@Localization.Get("products.in_stock")</MudText>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="4">
+                        <div class="text-center">
+                            <MudText Typo="Typo.h5" Style="color: white;">@ProductDetails.Price.ToString("N2")</MudText>
+                            <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.9);">@Localization.Get("units.egp")</MudText>
+                        </div>
+                    </MudItem>
+                    <MudItem xs="4">
+                        <div class="text-center">
+                            <MudText Typo="Typo.h5" Style="color: white;">@(ProductDetails.Orders?.Count ?? 0)</MudText>
+                            <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.9);">@Localization.Get("dialog.total_orders")</MudText>
+                        </div>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.close")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .text-center {
+        text-align: center;
+    }
+    .text-end {
+        text-align: end;
+    }
+</style>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public ProductDetailsDto ProductDetails { get; set; } = null!;
+
+    private bool _isRtl => Localization.IsArabic;
+
+    private void Close() => MudDialog.Close();
+
+    public class ProductDetailsDto
+    {
+        [JsonPropertyName("productID")] public int ProductID { get; set; }
+        [JsonPropertyName("productName")] public string ProductName { get; set; } = string.Empty;
+        [JsonPropertyName("productDescription")] public string ProductDescription { get; set; } = string.Empty;
+        [JsonPropertyName("price")] public decimal Price { get; set; }
+        [JsonPropertyName("quantityInStock")] public int QuantityInStock { get; set; }
+        [JsonPropertyName("mainImageURL")] public string MainImageURL { get; set; } = string.Empty;
+        [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("orders")] public List<OrderDto>? Orders { get; set; }
+    }
+
+    public class OrderDto
+    {
+        [JsonPropertyName("orderId")] public int OrderId { get; set; }
+        [JsonPropertyName("quantity")] public int Quantity { get; set; }
+        [JsonPropertyName("orderDate")] public DateTime OrderDate { get; set; }
+        [JsonPropertyName("subtotal")] public decimal Subtotal { get; set; }
+    }
+}

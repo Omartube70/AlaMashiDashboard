@@ -9,7 +9,7 @@
 @inject LocalizationService Localization
 
 <MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode" />
-<MudDialogProvider />
+<MudDialogProvider /> <!-- ✅ التأكد من وجود هذا العنصر -->
 <MudSnackbarProvider />
 
 <MudLayout dir="@Localization.Direction">

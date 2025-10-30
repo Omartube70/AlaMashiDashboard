@@ -4,6 +4,7 @@
 @inject IJSRuntime JS
 @inject IDialogService DialogService
 @using AdminDashboard.Services
+@using AlaMashi.AdminDashboard.Components.Dialogs
 @using AlaMashiDashboard.Services
 @inject LocalizationService Localization
 
@@ -419,55 +420,91 @@ else
 
     private async Task ViewUser(UserDto user)
     {
-        var details = Localization.IsArabic
-            ? $@"تفاصيل المستخدم:
+        try
+        {
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<UserDetailsDialog.UserDetailsDto>>($"/api/Users/{user.UserId}");
 
-الرقم: {user.UserId}
-الاسم: {user.UserName}
-البريد: {user.Email}
-الهاتف: {user.Phone}
-الدور: {(user.UserRole == "Admin" ? "مدير" : "مستخدم")}"
-            : $@"User Details:
-
-ID: {user.UserId}
-Name: {user.UserName}
-Email: {user.Email}
-Phone: {user.Phone}
-Role: {user.UserRole}";
-        await DialogService.ShowMessageBox(Localization.Get("common.view"), details, yesText: Localization.Get("common.close"));
+            if (response?.Data != null)
+            {
+                var parameters = new DialogParameters { ["UserDetails"] = response.Data };
+                await DialogService.ShowAsync<UserDetailsDialog>(
+                    Localization.Get("dialog.user_details"),
+                    parameters,
+                    new DialogOptions
+                    {
+                        MaxWidth = MaxWidth.Medium,
+                        FullWidth = true
+                    });
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
     }
 
-    private void OpenEditDialog(UserDto user)
+    private async Task OpenEditDialog(UserDto user)
     {
-        Snackbar.Add(Localization.IsArabic
-            ? $"ميزة التعديل لـ {user.UserName} - قريباً"
-            : $"Edit feature for {user.UserName} - Coming soon", Severity.Info);
+        var parameters = new DialogParameters
+        {
+            ["UserId"] = user.UserId,
+            ["UserName"] = user.UserName,
+            ["Email"] = user.Email,
+            ["Phone"] = user.Phone
+        };
+
+        var dialog = await DialogService.ShowAsync<EditUserDialog>(
+            Localization.Get("dialog.edit_user"),
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = false
+            });
+
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await LoadDataAsync();
+        }
     }
 
     private async Task DeleteUser(UserDto user)
     {
-        var confirmed = await DialogService.ShowMessageBox(
-            Localization.Get("common.delete"),
-            Localization.IsArabic
-                ? $"هل أنت متأكد من حذف المستخدم '{user.UserName}'؟ لا يمكن التراجع عن هذا الإجراء."
-                : $"Are you sure you want to delete user '{user.UserName}'? This action cannot be undone.",
-            yesText: Localization.Get("common.delete"),
-            cancelText: Localization.Get("common.cancel"));
-
-        if (confirmed != true) return;
-
-        try
+        var userDto = new DeleteUserDialog.UserDto
         {
-            await ApiService.DeleteAsync($"/api/Users/{user.UserId}");
-            Snackbar.Add(Localization.IsArabic
-                ? $"تم حذف المستخدم '{user.UserName}' بنجاح!"
-                : $"User '{user.UserName}' has been deleted successfully!", Severity.Success);
-            await LoadDataAsync();
-        }
-        catch (Exception ex)
+            UserId = user.UserId,
+            UserName = user.UserName,
+            Email = user.Email,
+            Phone = user.Phone,
+            UserRole = user.UserRole
+        };
+        
+        var parameters = new DialogParameters
         {
-            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
-        }
+            ["User"] = userDto
+        };
+
+        var dialog = await DialogService.ShowAsync<DeleteUserDialog>(
+            Localization.Get("dialog.delete_user"),
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.ExtraSmall,
+                FullWidth = true,
+                CloseButton = true,
+                DisableBackdropClick = true
+            });
+
+        var result = await dialog.Result;
+        
+        if (result.Canceled)
+            return;
+
+        // The dialog already handled the deletion, just reload the data
+        await LoadDataAsync();
     }
 
     private async Task ExportToCSV()

@@ -1,0 +1,254 @@
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.delete_payment")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-2">
+            <MudAlert Severity="Severity.Warning" Variant="Variant.Outlined" Class="mb-4">
+                <MudText Typo="Typo.body1" Class="font-weight-medium">
+                    @Localization.Get("dialog.delete_warning")
+                </MudText>
+            </MudAlert>
+
+            <MudPaper Elevation="2" Class="pa-4">
+                <MudStack Spacing="3">
+                    <div class="d-flex align-center">
+                        <MudAvatar Size="Size.Medium" Color="Color.Primary" Class="@(_isRtl ? "ml-3" : "mr-3")">
+                            <MudIcon Icon="@Icons.Material.Filled.Payment" />
+                        </MudAvatar>
+                        <MudStack>
+                            <MudText Typo="Typo.h6">@Localization.Get("payments.payment_id"): #@Payment.PaymentId</MudText>
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("payments.amount"): @Payment.Amount.ToString("N2") @Localization.Get("units.egp")</MudText>
+                        </MudStack>
+                    </div>
+                    
+                    <MudDivider />
+                    
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("payments.order_id")</MudText>
+                            <MudChip Size="Size.Small" Color="Color.Default">
+                                #@Payment.OrderId
+                            </MudChip>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("payments.method")</MudText>
+                            <MudChip Size="Size.Small" Color="@(GetPaymentMethodColor(Payment.PaymentMethod))">
+                                @GetLocalizedPaymentMethod(Payment.PaymentMethod)
+                            </MudChip>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("payments.status")</MudText>
+                            <MudChip Size="Size.Small" Color="@(GetStatusColor(Payment.Status))">
+                                @GetLocalizedStatus(Payment.Status)
+                            </MudChip>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("payments.date")</MudText>
+                            <MudText Typo="Typo.body1">@Payment.PaymentDate.ToString("yyyy-MM-dd")</MudText>
+                        </MudItem>
+                        @if (!string.IsNullOrEmpty(Payment.TransactionId))
+                        {
+                            <MudItem xs="12">
+                                <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("payments.transaction")</MudText>
+                                <MudText Typo="Typo.body1" Class="font-monospace">@Payment.TransactionId</MudText>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudStack>
+            </MudPaper>
+
+            <MudDivider />
+
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @Localization.Get("dialog.admin_password_required")
+            </MudText>
+
+            <MudTextField @bind-Value="adminPassword"
+                          Label="@Localization.Get("dialog.admin_password")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Lock"
+                          Type="InputType.Password"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidatePassword))" />
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>• @error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Confirm" Variant="Variant.Filled" Color="Color.Error" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Delete">
+            @(isSubmitting ? Localization.Get("dialog.deleting") : Localization.Get("common.delete"))
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public PaymentDto Payment { get; set; } = new();
+    
+    private bool _isRtl => Localization.IsArabic;
+    private string adminPassword = string.Empty;
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    public class PaymentDto
+    {
+        public int PaymentId { get; set; }
+        public int OrderId { get; set; }
+        public string TransactionId { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public DateTime PaymentDate { get; set; }
+    }
+
+    private Color GetPaymentMethodColor(string method)
+    {
+        return method.ToLower() switch
+        {
+            "cash" => Color.Success,
+            "card" => Color.Info,
+            "wallet" => Color.Primary,
+            "online" => Color.Secondary,
+            _ => Color.Default
+        };
+    }
+
+    private string GetLocalizedPaymentMethod(string method)
+    {
+        if (Localization.IsArabic)
+        {
+            return method.ToLower() switch
+            {
+                "cash" => "نقدي",
+                "card" => "بطاقة",
+                "wallet" => "محفظة",
+                "online" => "دفع إلكتروني",
+                _ => method
+            };
+        }
+        else
+        {
+            return method.ToLower() switch
+            {
+                "cash" => "Cash",
+                "card" => "Card",
+                "wallet" => "Wallet",
+                "online" => "Online",
+                _ => method
+            };
+        }
+    }
+
+    private Color GetStatusColor(string status)
+    {
+        return status.ToLower() switch
+        {
+            "pending" => Color.Warning,
+            "paid" => Color.Success,
+            "refunded" => Color.Info,
+            "failed" => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private string GetLocalizedStatus(string status)
+    {
+        if (Localization.IsArabic)
+        {
+            return status.ToLower() switch
+            {
+                "pending" => "قيد الانتظار",
+                "paid" => "مدفوع",
+                "refunded" => "مسترد",
+                "failed" => "فشل",
+                _ => status
+            };
+        }
+        else
+        {
+            return status.ToLower() switch
+            {
+                "pending" => "Pending",
+                "paid" => "Paid",
+                "refunded" => "Refunded",
+                "failed" => "Failed",
+                _ => status
+            };
+        }
+    }
+
+    private IEnumerable<string> ValidatePassword(string password)
+    {
+        if (string.IsNullOrWhiteSpace(password))
+            yield return Localization.Get("validation.required");
+        else if (password.Length < 4)
+            yield return Localization.IsArabic ? "كلمة المرور يجب أن تكون 4 أحرف على الأقل" : "Password must be at least 4 characters";
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidatePassword(adminPassword));
+    }
+
+    private async Task Confirm()
+    {
+        ValidateForm();
+        if (validationErrors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            // Here you would typically validate the admin password against your API
+            // For now, we'll just close the dialog with the password
+            var result = new DeletePaymentResult
+            {
+                Confirmed = true,
+                AdminPassword = adminPassword,
+                PaymentId = Payment.PaymentId
+            };
+            
+            MudDialog.Close(DialogResult.Ok(result));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    public class DeletePaymentResult
+    {
+        public bool Confirmed { get; set; }
+        public string AdminPassword { get; set; } = string.Empty;
+        public int PaymentId { get; set; }
+    }
+}
