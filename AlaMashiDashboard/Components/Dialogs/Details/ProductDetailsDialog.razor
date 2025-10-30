@@ -2,12 +2,13 @@
 @using global::AdminDashboard.Services
 @inject LocalizationService Localization
 
-<MudDialog>
+<MudDialog ClassActions="dialog-actions-improved" ClassContent="dialog-content-smooth" Style="max-width: 900px;">
     <TitleContent>
-        <div class="d-flex align-center gap-2">
-            <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Color="Color.Primary" />
-            <MudText Typo="Typo.h6">@Localization.Get("dialog.product_details")</MudText>
+        <div class="d-flex align-center gap-2 pa-2">
+            <MudIcon Icon="@Icons.Material.Filled.ShoppingBag" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.h5" Class="font-weight-bold">@Localization.Get("dialog.product_details")</MudText>
         </div>
+        <MudDivider />
     </TitleContent>
 
     <DialogContent>
@@ -155,9 +156,11 @@
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close">
-            @Localization.Get("common.close")
-        </MudButton>
+        <MudStack Row="true" Spacing="2" Class="pa-2" Style="width:100%;" Justify="Justify.FlexEnd">
+            <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close" Size="Size.Medium" Class="px-6">
+                @Localization.Get("common.close")
+            </MudButton>
+        </MudStack>
     </DialogActions>
 </MudDialog>
 

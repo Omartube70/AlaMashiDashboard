@@ -20,7 +20,7 @@
                         <MudChip Size="Size.Small" Style="background-color: rgba(255,255,255,0.3); color: white;">#@OfferDetails.OfferID</MudChip>
                     </div>
                     <div class="text-end">
-                        <MudText Typo="Typo.h2" Style="color: white;" Class="font-weight-bold">@OfferDetails.DiscountPercentage%</MudText>
+                        <MudText Typo="Typo.h2" Style="color: white;" Class="font-weight-bold">@GetDiscountPercentage()%</MudText>
                         <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,0.9);">@Localization.Get("dialog.discount")</MudText>
                     </div>
                 </div>
@@ -112,7 +112,7 @@
                 <MudGrid Spacing="2">
                     <MudItem xs="4">
                         <div class="text-center">
-                            <MudText Typo="Typo.h5" Style="color: white;">@OfferDetails.DiscountPercentage%</MudText>
+                            <MudText Typo="Typo.h5" Style="color: white;">@GetDiscountPercentage()%</MudText>
                             <MudText Typo="Typo.caption" Style="color: rgba(255,255,255,0.9);">@Localization.Get("dialog.discount")</MudText>
                         </div>
                     </MudItem>
@@ -198,6 +198,15 @@
         
         var days = (OfferDetails.EndDate - now).Days;
         return days.ToString();
+    }
+
+    private string GetDiscountPercentage()
+    {
+        // Handle both formats: 0.30 (30%) or 30 (30%)
+        var percentage = OfferDetails.DiscountPercentage;
+        if (percentage <= 1)
+            percentage *= 100;
+        return percentage.ToString("F0");
     }
 
     public class OfferDetailsDto

@@ -1,0 +1,283 @@
+/* ========================================
+   Custom Dialog Improvements
+   ======================================== */
+
+/* Dialog smooth animations */
+.dialog-content-smooth {
+    animation: fadeInUp 0.3s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dialog actions styling */
+.dialog-actions-improved {
+    background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.02));
+    border-top: 1px solid rgba(0,0,0,0.08);
+    padding: 16px 24px !important;
+}
+
+/* Enhanced buttons */
+.mud-button {
+    transition: all 0.3s ease;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px;
+}
+
+.mud-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.mud-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Dialog title enhancements */
+.mud-dialog-title {
+    padding: 0 !important;
+}
+
+.mud-dialog-title .mud-icon-root {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Loading spinner improvements */
+.mud-progress-circular {
+    animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Alert enhancements */
+.mud-alert {
+    animation: slideIn 0.4s ease-out;
+    border-radius: 8px !important;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Paper/Card hover effects */
+.mud-paper:hover {
+    transition: all 0.3s ease;
+}
+
+/* Input field focus enhancements */
+.mud-input-control:focus-within {
+    transform: scale(1.01);
+    transition: transform 0.2s ease;
+}
+
+/* Chip enhancements */
+.mud-chip {
+    transition: all 0.2s ease;
+}
+
+.mud-chip:hover {
+    transform: scale(1.05);
+}
+
+/* Table row hover */
+.mud-table-row:hover {
+    background-color: rgba(103, 58, 183, 0.08) !important;
+    transition: background-color 0.2s ease;
+}
+
+/* Custom scrollbar */
+.dialog-content-smooth::-webkit-scrollbar {
+    width: 8px;
+}
+
+.dialog-content-smooth::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.dialog-content-smooth::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.dialog-content-smooth::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* RTL Support */
+[dir="rtl"] .dialog-content-smooth {
+    direction: rtl;
+}
+
+/* Success button gradient */
+.mud-button.mud-button-filled.mud-button-filled-success {
+    background: linear-gradient(45deg, #66bb6a 30%, #81c784 90%);
+}
+
+/* Error button gradient */
+.mud-button.mud-button-filled.mud-button-filled-error {
+    background: linear-gradient(45deg, #f44336 30%, #ef5350 90%);
+}
+
+/* Info button gradient */
+.mud-button.mud-button-filled.mud-button-filled-info {
+    background: linear-gradient(45deg, #29b6f6 30%, #4fc3f7 90%);
+}
+
+/* Primary button gradient */
+.mud-button.mud-button-filled.mud-button-filled-primary {
+    background: linear-gradient(45deg, #673ab7 30%, #7e57c2 90%);
+}
+
+/* Form field enhancements */
+.mud-input-outlined .mud-input-control {
+    border-radius: 8px !important;
+}
+
+/* Dialog backdrop */
+.mud-overlay {
+    backdrop-filter: blur(4px);
+    background-color: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* File upload button */
+.mud-file-upload {
+    transition: all 0.3s ease;
+}
+
+.mud-file-upload:hover {
+    transform: translateY(-2px);
+}
+
+/* Select dropdown */
+.mud-select {
+    transition: all 0.2s ease;
+}
+
+/* Date picker */
+.mud-picker-calendar-day:hover {
+    transform: scale(1.1);
+    transition: transform 0.2s ease;
+}
+
+/* Snackbar */
+.mud-snackbar {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2) !important;
+}
+
+/* Avatar pulse effect */
+.mud-avatar {
+    transition: all 0.3s ease;
+}
+
+.mud-avatar:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* Divider animation */
+.mud-divider {
+    animation: expandWidth 0.5s ease-out;
+}
+
+@keyframes expandWidth {
+    from {
+        width: 0;
+    }
+    to {
+        width: 100%;
+    }
+}
+
+/* Badge pulse */
+.mud-badge-dot {
+    animation: badgePulse 2s infinite;
+}
+
+@keyframes badgePulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+}
+
+/* Enhanced shadows */
+.elevation-enhanced {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+    transition: box-shadow 0.3s ease;
+}
+
+.elevation-enhanced:hover {
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Gradient background for special cards */
+.gradient-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white !important;
+}
+
+.gradient-card * {
+    color: white !important;
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* Responsive utilities */
+@media (max-width: 600px) {
+    .dialog-actions-improved .mud-stack {
+        flex-direction: column !important;
+    }
+    
+    .dialog-actions-improved .mud-button {
+        width: 100% !important;
+    }
+}

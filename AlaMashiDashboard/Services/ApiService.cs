@@ -318,6 +318,67 @@ public class ApiService
         }
     }
 
+    // ------------------- PATCH with Plain JSON (not JSON Patch) -------------------
+    public async Task<T?> PatchJsonAsync<T>(string url, object data)
+    {
+        var token = await _tokenManager.GetAccessTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            _navManager.NavigateTo("/login");
+            return default;
+        }
+
+        var client = _httpClientFactory.CreateClient("Api");
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        try
+        {
+            var jsonContent = new StringContent(
+                JsonSerializer.Serialize(data),
+                Encoding.UTF8,
+                "application/json");
+
+            var request = new HttpRequestMessage(HttpMethod.Patch, url)
+            {
+                Content = jsonContent
+            };
+
+            var response = await client.SendAsync(request);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                bool refreshed = await RefreshTokenAsync();
+                if (refreshed)
+                    return await PatchJsonAsync<T>(url, data);
+
+                _navManager.NavigateTo("/login");
+                return default;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"PATCH Error ({response.StatusCode}): {errorContent}");
+                return default;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(content))
+                return default;
+
+            return JsonSerializer.Deserialize<T>(content, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"PATCH JSON exception: {ex.Message}");
+            return default;
+        }
+    }
+
     // دالة POST خاصة بالعمليات اللي مش محتاجة login
     public async Task<T?> PostWithoutAuthAsync<T>(string url, object body)
     {

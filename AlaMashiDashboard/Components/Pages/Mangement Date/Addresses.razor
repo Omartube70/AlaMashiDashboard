@@ -1,4 +1,4 @@
-﻿@page "/addresses"
+@page "/addresses"
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
@@ -148,9 +148,9 @@ else if (addressesList != null && addressesList.Any())
                     </MudTd>
                     <MudTd DataLabel="@Localization.Get("addresses.type")">
                         <MudChip Size="Size.Small"
-                                 Color="@GetTypeColor(context.AddressType)"
-                                 Icon="@GetTypeIcon(context.AddressType)">
-                            @GetTypeLabel(context.AddressType)
+                                 Color="@GetTypeColor(context.AddressTypeInt)"
+                                 Icon="@GetTypeIcon(context.AddressTypeInt)">
+                            @GetTypeLabel(context.AddressTypeInt)
                         </MudChip>
                     </MudTd>
                     <MudTd DataLabel="@Localization.Get("common.actions")" Style="text-align: right;">
@@ -384,7 +384,7 @@ else
         var filtered = addressesList.AsEnumerable();
 
         if (_typeFilter != null)
-            filtered = filtered.Where(a => a.AddressType == _typeFilter);
+            filtered = filtered.Where(a => a.AddressTypeInt == _typeFilter);
 
         if (!string.IsNullOrWhiteSpace(_searchString))
             filtered = filtered.Where(a =>
@@ -398,7 +398,7 @@ else
 
     private void FilterByType(int? type) => _typeFilter = type;
 
-    private int GetTypeCount(int type) => addressesList?.Count(a => a.AddressType == type) ?? 0;
+    private int GetTypeCount(int type) => addressesList?.Count(a => a.AddressTypeInt == type) ?? 0;
 
     private Color GetTypeColor(int type) => type switch
     {
@@ -495,7 +495,7 @@ else
             City = address.City,
             Street = address.Street,
             AddressDetails = address.AddressDetails,
-            AddressType = address.AddressType.ToString()
+            AddressType = address.AddressType
         };
         
         var parameters = new DialogParameters
@@ -563,7 +563,16 @@ else
         [JsonPropertyName("street")] public string Street { get; set; } = string.Empty;
         [JsonPropertyName("city")] public string City { get; set; } = string.Empty;
         [JsonPropertyName("addressDetails")] public string AddressDetails { get; set; } = string.Empty;
-        [JsonPropertyName("addressType")] public int AddressType { get; set; }
+        [JsonPropertyName("addressType")] public string AddressType { get; set; } = string.Empty;
         [JsonPropertyName("userId")] public int UserId { get; set; }
+        
+        // Helper property to convert string to int for UI
+        public int AddressTypeInt => AddressType switch
+        {
+            "Home" => 1,
+            "Work" => 2,
+            "Other" => 3,
+            _ => 3
+        };
     }
 }

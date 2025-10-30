@@ -1,4 +1,5 @@
 ﻿@page "/orders"
+@using AlaMashi.AdminDashboard.Components.Dialogs
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
@@ -462,7 +463,7 @@ else
     {
         try
         {
-            var response = await ApiService.GetAsync<ApiService.ApiResponse<OrderDetailsDto>>($"/api/Orders/{orderId}");
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<AlaMashi.AdminDashboard.Components.Dialogs.OrderDetailsDialog.OrderDetailsDto>>($"/api/Orders/{orderId}");
 
             if (response?.Data != null)
             {
@@ -526,52 +527,5 @@ else
         [JsonPropertyName("city")] public string City { get; set; } = string.Empty;
         [JsonPropertyName("addressDetails")] public string AddressDetails { get; set; } = string.Empty;
         [JsonPropertyName("addressType")] public string AddressType { get; set; } = string.Empty;
-    }
-
-    public class OrderDetailsDto : OrderDto
-    {
-        [JsonPropertyName("orderDetails")] public List<OrderDetailDto>? OrderDetails { get; set; }
-        [JsonPropertyName("payments")] public List<PaymentDto>? Payments { get; set; }
-    }
-
-    public class OrderDetailDto
-    {
-        [JsonPropertyName("orderDetailId")] public int OrderDetailId { get; set; }
-        [JsonPropertyName("productId")] public int ProductId { get; set; }
-        [JsonPropertyName("productName")] public string ProductName { get; set; } = string.Empty;
-        [JsonPropertyName("quantity")] public int Quantity { get; set; }
-        [JsonPropertyName("priceAtOrder")] public decimal PriceAtOrder { get; set; }
-        [JsonPropertyName("subtotal")] public decimal Subtotal { get; set; }
-    }
-
-    public class PaymentDto
-    {
-        [JsonPropertyName("paymentId")] public int PaymentId { get; set; }
-        [JsonPropertyName("amount")] public decimal Amount { get; set; }
-        [JsonPropertyName("paymentMethod")] public string PaymentMethod { get; set; } = string.Empty;
-        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
-        [JsonPropertyName("paymentDate")] public DateTime PaymentDate { get; set; }
-    }
-
-    public class OrderDetailsDialog : ComponentBase
-    {
-        [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
-        [Parameter] public OrderDetailsDto OrderDetails { get; set; } = null!;
-
-        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
-        {
-        }
-    }
-
-    public class UpdateStatusDialog : ComponentBase
-    {
-        [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
-        [Parameter] public int OrderId { get; set; }
-        [Parameter] public string CurrentStatus { get; set; } = string.Empty;
-        [Parameter] public string NextStatus { get; set; } = string.Empty;
-
-        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
-        {
-        }
     }
 }

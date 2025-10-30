@@ -2,12 +2,13 @@
 @using global::AdminDashboard.Services
 @inject LocalizationService Localization
 
-<MudDialog>
+<MudDialog ClassActions="dialog-actions-improved" ClassContent="dialog-content-smooth" Style="max-width: 900px;">
     <TitleContent>
-        <div class="d-flex align-center gap-2">
-            <MudIcon Icon="@Icons.Material.Filled.Receipt" Color="Color.Primary" />
-            <MudText Typo="Typo.h6">@Localization.Get("dialog.order_details") #@OrderDetails.OrderId</MudText>
+        <div class="d-flex align-center gap-2 pa-2">
+            <MudIcon Icon="@Icons.Material.Filled.Receipt" Color="Color.Primary" Size="Size.Large" />
+            <MudText Typo="Typo.h5" Class="font-weight-bold">@Localization.Get("dialog.order_details") #@OrderDetails.OrderId</MudText>
         </div>
+        <MudDivider />
     </TitleContent>
 
     <DialogContent>
@@ -121,7 +122,26 @@
                                     <td class="text-center">
                                         <MudChip Size="Size.Small" Color="Color.Info">@item.Quantity</MudChip>
                                     </td>
-                                    <td class="text-center">@item.PriceAtOrder.ToString("N2") @Localization.Get("units.egp")</td>
+                                    <td class="text-center">
+                                        @if (item.OriginalPriceAtOrder.HasValue && item.OriginalPriceAtOrder.Value > item.PriceAtOrder)
+                                        {
+                                            <div>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="text-decoration: line-through;">
+                                                    @item.OriginalPriceAtOrder.Value.ToString("N2") @Localization.Get("units.egp")
+                                                </MudText>
+                                                <MudText Typo="Typo.body2" Color="Color.Success" Class="font-weight-bold">
+                                                    @item.PriceAtOrder.ToString("N2") @Localization.Get("units.egp")
+                                                </MudText>
+                                                <MudChip Size="Size.Small" Color="Color.Success" Style="font-size: 0.7rem;">
+                                                    -@(((item.OriginalPriceAtOrder.Value - item.PriceAtOrder) / item.OriginalPriceAtOrder.Value * 100).ToString("F0"))%
+                                                </MudChip>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <MudText Typo="Typo.body2">@item.PriceAtOrder.ToString("N2") @Localization.Get("units.egp")</MudText>
+                                        }
+                                    </td>
                                     <td class="text-center">
                                         <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
                                             @item.Subtotal.ToString("N2") @Localization.Get("units.egp")
@@ -183,9 +203,11 @@
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close">
-            @Localization.Get("common.close")
-        </MudButton>
+        <MudStack Row="true" Spacing="2" Class="pa-2" Style="width:100%;" Justify="Justify.FlexEnd">
+            <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close" Size="Size.Medium" Class="px-6">
+                @Localization.Get("common.close")
+            </MudButton>
+        </MudStack>
     </DialogActions>
 </MudDialog>
 
@@ -261,6 +283,7 @@
         [JsonPropertyName("productName")] public string ProductName { get; set; } = string.Empty;
         [JsonPropertyName("quantity")] public int Quantity { get; set; }
         [JsonPropertyName("priceAtOrder")] public decimal PriceAtOrder { get; set; }
+        [JsonPropertyName("originalPriceAtOrder")] public decimal? OriginalPriceAtOrder { get; set; }
         [JsonPropertyName("subtotal")] public decimal Subtotal { get; set; }
     }
 

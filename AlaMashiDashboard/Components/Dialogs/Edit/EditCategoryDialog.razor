@@ -4,12 +4,13 @@
 @inject ISnackbar Snackbar
 @inject LocalizationService Localization
 
-<MudDialog>
+<MudDialog ClassActions="dialog-actions-improved" ClassContent="dialog-content-smooth">
     <TitleContent>
-        <div class="d-flex align-center gap-2">
-            <MudIcon Icon="@Icons.Material.Filled.Edit" Color="Color.Info" />
-            <MudText Typo="Typo.h6">@Localization.Get("dialog.edit_category")</MudText>
+        <div class="d-flex align-center gap-2 pa-2">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Color="Color.Info" Size="Size.Large" />
+            <MudText Typo="Typo.h5" Class="font-weight-bold">@Localization.Get("dialog.edit_category")</MudText>
         </div>
+        <MudDivider />
     </TitleContent>
 
     <DialogContent>
@@ -41,12 +42,22 @@
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
-            @Localization.Get("common.cancel")
-        </MudButton>
-        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Info" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Save">
-            @(isSubmitting? Localization.Get("dialog.updating") : Localization.Get("dialog.update"))
-        </MudButton>
+        <MudStack Row="true" Spacing="2" Class="pa-2" Style="width:100%;" Justify="Justify.FlexEnd">
+            <MudButton OnClick="Cancel" Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Close" Size="Size.Medium">
+                @Localization.Get("common.cancel")
+            </MudButton>
+            <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Info" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Save" Size="Size.Medium" Class="px-6">
+                @if (isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>@Localization.Get("dialog.updating")</span>
+                }
+                else
+                {
+                    @Localization.Get("dialog.update")
+                }
+            </MudButton>
+        </MudStack>
     </DialogActions>
 </MudDialog>
 

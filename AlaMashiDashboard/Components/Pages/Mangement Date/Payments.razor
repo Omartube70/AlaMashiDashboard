@@ -433,27 +433,35 @@ else
 
     private async Task ViewPaymentDetails(int paymentId)
     {
-        try
+        // Since there's no dedicated endpoint, show basic info from the list
+        var payment = paymentsList?.FirstOrDefault(p => p.PaymentId == paymentId);
+        if (payment == null)
         {
-            var response = await ApiService.GetAsync<ApiService.ApiResponse<PaymentDetailsDialog.PaymentDetailsDto>>($"/api/Payments/{paymentId}");
+            Snackbar.Add(Localization.Get("common.error"), Severity.Error);
+            return;
+        }
 
-            if (response?.Data != null)
-            {
-                var parameters = new DialogParameters { ["PaymentDetails"] = response.Data };
-                await DialogService.ShowAsync<PaymentDetailsDialog>(
-                    Localization.Get("dialog.payment_details"),
-                    parameters,
-                    new DialogOptions
-                    {
-                        MaxWidth = MaxWidth.Medium,
-                        FullWidth = true
-                    });
-            }
-        }
-        catch (Exception ex)
+        var paymentDetails = new PaymentDetailsDialog.PaymentDetailsDto
         {
-            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
-        }
+            PaymentId = payment.PaymentId,
+            Amount = payment.Amount,
+            PaymentDate = payment.PaymentDate,
+            PaymentMethod = payment.PaymentMethod,
+            PaymentStatus = payment.PaymentStatus,
+            TransactionId = payment.TransactionId,
+            Order = null, // Not available in list
+            User = null   // Not available in list
+        };
+
+        var parameters = new DialogParameters { ["PaymentDetails"] = paymentDetails };
+        await DialogService.ShowAsync<PaymentDetailsDialog>(
+            Localization.Get("dialog.payment_details"),
+            parameters,
+            new DialogOptions
+            {
+                MaxWidth = MaxWidth.Medium,
+                FullWidth = true
+            });
     }
 
     private async Task DeletePayment(PaymentDto payment)
