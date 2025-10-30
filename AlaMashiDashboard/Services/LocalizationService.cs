@@ -264,8 +264,8 @@ namespace AdminDashboard.Services
                 ["ar"] = new Dictionary<string, string>
                 {
                     // App
-                    ["app.title"] = "على ماشي",
-                    ["app.dashboard"] = "لوحة تحكم على ماشي",
+                    ["app.title"] = "عالماشي",
+                    ["app.dashboard"] = "لوحة التحكم",
 
                     // Menu
                     ["menu.dashboard"] = "لوحة التحكم",
