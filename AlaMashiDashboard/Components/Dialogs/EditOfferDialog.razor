@@ -1,0 +1,178 @@
+﻿@using global::AdminDashboard.Services
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.edit_offer")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-2">
+            <MudTextField @bind-Value="offerForm.Title"
+                          Label="@Localization.Get("dialog.offer_title")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.LocalOffer"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateTitle))" />
+
+            <MudTextField @bind-Value="offerForm.Description"
+                          Label="@Localization.Get("dialog.description")"
+                          Variant="Variant.Outlined"
+                          Lines="3"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Description"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateDescription))" />
+
+            <MudNumericField @bind-Value="offerForm.DiscountPercentage"
+                             Label="@Localization.Get("dialog.discount_percentage")"
+                             Variant="Variant.Outlined"
+                             Min="1"
+                             Max="100"
+                             Adornment="Adornment.Start"
+                             AdornmentIcon="@Icons.Material.Filled.Percent" />
+
+            <MudDatePicker @bind-Date="offerForm.StartDate"
+                           Label="@Localization.Get("dialog.start_date")"
+                           Variant="Variant.Outlined"
+                           DateFormat="dd/MM/yyyy"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.CalendarToday" />
+
+            <MudDatePicker @bind-Date="offerForm.EndDate"
+                           Label="@Localization.Get("dialog.end_date")"
+                           Variant="Variant.Outlined"
+                           DateFormat="dd/MM/yyyy"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.Event" />
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>• @error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Info" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Save">
+            @(isSubmitting? Localization.Get("dialog.updating") : Localization.Get("dialog.update"))
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public int OfferID { get; set; }
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public decimal DiscountPercentage { get; set; }
+    [Parameter] public DateTime StartDate { get; set; }
+    [Parameter] public DateTime EndDate { get; set; }
+
+    private UpdateOfferForm offerForm = new();
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    protected override void OnInitialized()
+    {
+        offerForm = new UpdateOfferForm
+        {
+            Title = Title,
+            Description = Description,
+            DiscountPercentage = DiscountPercentage,
+            StartDate = StartDate,
+            EndDate = EndDate
+        };
+    }
+
+    public class UpdateOfferForm
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal DiscountPercentage { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+    }
+
+    private IEnumerable<string> ValidateTitle(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            yield return Localization.Get("validation.required");
+        else if (title.Length < 3 || title.Length > 100)
+            yield return Localization.IsArabic ? "يجب أن يكون بين 3 و 100 حرف" : "Must be between 3 and 100 characters";
+    }
+
+    private IEnumerable<string> ValidateDescription(string desc)
+    {
+        if (string.IsNullOrWhiteSpace(desc))
+            yield return Localization.Get("validation.required");
+        else if (desc.Length < 10 || desc.Length > 500)
+            yield return Localization.IsArabic ? "يجب أن يكون بين 10 و 500 حرف" : "Must be between 10 and 500 characters";
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidateTitle(offerForm.Title));
+        validationErrors.AddRange(ValidateDescription(offerForm.Description));
+
+        if (!offerForm.StartDate.HasValue || !offerForm.EndDate.HasValue)
+            validationErrors.Add(Localization.IsArabic ? "التواريخ مطلوبة" : "Dates are required");
+        else if (offerForm.StartDate > offerForm.EndDate)
+            validationErrors.Add(Localization.IsArabic ? "تاريخ النهاية يجب أن يكون بعد تاريخ البداية" : "End date must be after start date");
+    }
+
+    private async Task Submit()
+    {
+        ValidateForm();
+        if (validationErrors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            var updateRequest = new
+            {
+                title = offerForm.Title,
+                description = offerForm.Description,
+                discountPercentage = offerForm.DiscountPercentage,
+                startDate = offerForm.StartDate,
+                endDate = offerForm.EndDate
+            };
+
+            var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Offers/{OfferID}", updateRequest);
+
+            if (response?.Success == true)
+            {
+                Snackbar.Add(Localization.IsArabic ? "تم تحديث العرض بنجاح!" : "Offer updated successfully!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

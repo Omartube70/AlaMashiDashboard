@@ -2,289 +2,131 @@
 @inherits LayoutComponentBase
 @inject LocalizationService Localization
 @inject IJSRuntime JS
+@implements IDisposable
 
-<PageTitle>Admin Dashboard</PageTitle>
+<MudThemeProvider Theme="_theme" IsDarkMode="_isDarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
 
+<!-- AppBar للتحكم في اللغة والثيم -->
+<MudAppBar Elevation="0" Dense="true" Style="background: transparent; backdrop-filter: blur(10px);">
+    <MudSpacer />
+
+    <!-- Language Switcher -->
+    <MudTooltip Text="@Localization.Get("lang.toggle")">
+        <MudIconButton Icon="@Icons.Material.Filled.Translate"
+                       OnClick="ToggleLanguage"
+                       Color="Color.Inherit"
+                       Size="Size.Large"
+                       Class="control-btn" />
+    </MudTooltip>
+
+    <!-- Dark/Light Mode Switch -->
+    <MudTooltip Text="@Localization.Get("theme.toggle")">
+        <MudIconButton Icon="@(_isDarkMode? Icons.Material.Filled.DarkMode : Icons.Material.Filled.WbSunny)"
+                       OnClick="ToggleTheme"
+                       Color="Color.Inherit"
+                       Size="Size.Large"
+                       Class="control-btn" />
+    </MudTooltip>
+</MudAppBar>
+
+<!-- محتوى الصفحة -->
 <div class="auth-wrapper" data-theme="@(_isDarkMode ? "dark" : "light")" dir="@Localization.Direction">
-
-    <!-- Floating Controls (Language & Theme) -->
-    <div class="floating-controls">
-        <MudTooltip Text="@(Localization.IsArabic ? "تبديل اللغة" : "Toggle Language")">
-            <MudIconButton Icon="@Icons.Material.Filled.Translate"
-                           OnClick="ToggleLanguage"
-                           Color="Color.Surface"
-                           Size="Size.Large"
-                           Class="control-btn glass-effect" />
-        </MudTooltip>
-        <MudTooltip Text="@(Localization.IsArabic ? "تبديل المظهر" : "Toggle Theme")">
-            <MudIconButton Icon="@(_isDarkMode? Icons.Material.Filled.DarkMode : Icons.Material.Filled.WbSunny)"
-                           OnClick="ToggleTheme"
-                           Color="Color.Surface"
-                           Size="Size.Large"
-                           Class="control-btn glass-effect" />
-        </MudTooltip>
-    </div>
-
-    <!-- Animated Background -->
-    <div class="animated-bg">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-    </div>
-
-    <!-- Main Content -->
     <MudContainer MaxWidth="MaxWidth.Small" Class="auth-container">
         @Body
     </MudContainer>
-
 </div>
 
 <style>
-    /* Base Wrapper */
     .auth-wrapper {
         min-height: 100vh;
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 2rem 1rem;
-        position: relative;
-        overflow: hidden;
-        transition: background 0.5s ease;
+        padding-top: 5rem;
+        transition: background 0.3s ease;
     }
 
-        /* Light Mode Gradient */
+        /* Light Mode - Default (Login) */
         .auth-wrapper[data-theme="light"] {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        /* Dark Mode Gradient */
+        /* Dark Mode - Default (Login) */
         .auth-wrapper[data-theme="dark"] {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         }
 
-    /* Animated Background Shapes */
-    .animated-bg {
-        position: absolute;
+    .auth-container {
         width: 100%;
-        height: 100%;
-        overflow: hidden;
-        z-index: 0;
-    }
-
-    .shape {
-        position: absolute;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(60px);
-        animation: float 20s infinite ease-in-out;
-    }
-
-    .shape-1 {
-        width: 300px;
-        height: 300px;
-        top: -150px;
-        left: -150px;
-        animation-delay: 0s;
-    }
-
-    .shape-2 {
-        width: 400px;
-        height: 400px;
-        bottom: -200px;
-        right: -200px;
-        animation-delay: 7s;
-    }
-
-    .shape-3 {
-        width: 250px;
-        height: 250px;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        animation-delay: 14s;
-    }
-
-    @@keyframes float {
-        0%, 100%
-
-    {
-        transform: translate(0, 0) scale(1);
-        opacity: 0.7;
-    }
-
-    33% {
-        transform: translate(50px, -50px) scale(1.1);
-        opacity: 0.9;
-    }
-
-    66% {
-        transform: translate(-50px, 50px) scale(0.9);
-        opacity: 0.8;
-    }
-
-    }
-
-    /* Floating Controls */
-    .floating-controls {
-        position: fixed;
-        top: 1.5rem;
-        display: flex;
-        gap: 0.75rem;
-        z-index: 1000;
-        animation: slideDown 0.6s ease-out;
-    }
-
-    [dir="ltr"] .floating-controls {
-        right: 1.5rem;
-    }
-
-    [dir="rtl"] .floating-controls {
-        left: 1.5rem;
+        max-width: 500px;
     }
 
     .control-btn {
-        background: rgba(255, 255, 255, 0.15) !important;
-        backdrop-filter: blur(20px);
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.3);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.3s ease;
+        margin: 0 0.25rem;
     }
 
         .control-btn:hover {
-            background: rgba(255, 255, 255, 0.25) !important;
-            transform: translateY(-3px) scale(1.05);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
         }
 
-        .control-btn:active {
-            transform: translateY(-1px) scale(1.02);
-        }
-
-    /* Main Container */
-    .auth-container {
-        width: 100%;
-        max-width: 480px;
-        z-index: 10;
-        animation: fadeInUp 0.8s ease-out;
+    /* AppBar Styling */
+    ::deep .mud-appbar {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.1) !important;
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
     }
 
-    /* Animations */
-    @@keyframes slideDown {
-        from
-
-    {
-        opacity: 0;
-        transform: translateY(-30px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    }
-
-    @@keyframes fadeInUp {
-        from
-
-    {
-        opacity: 0;
-        transform: translateY(40px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-
-    }
-
-    /* Responsive Design */
     @@media (max-width: 600px) {
         .auth-wrapper
 
     {
         padding: 1rem;
+        padding-top: 4rem;
     }
 
-    .floating-controls {
-        top: 1rem;
-        gap: 0.5rem;
+    .control-btn {
+        margin: 0 0.15rem;
     }
 
-    [dir="ltr"] .floating-controls {
-        right: 1rem;
-    }
-
-    [dir="rtl"] .floating-controls {
-        left: 1rem;
-    }
-
-    .shape {
-        opacity: 0.5;
-    }
-
-    .shape-1 {
-        width: 200px;
-        height: 200px;
-    }
-
-    .shape-2 {
-        width: 250px;
-        height: 250px;
-    }
-
-    .shape-3 {
-        width: 150px;
-        height: 150px;
-    }
-
-    }
-
-    @@media (max-height: 700px) {
-        .auth-wrapper
-
-    {
-        padding: 1rem;
-    }
-
-    }
-
-    /* Dark Mode Adjustments */
-    [data-theme="dark"] .control-btn {
-        background: rgba(255, 255, 255, 0.08) !important;
-        border-color: rgba(255, 255, 255, 0.15);
-    }
-
-        [data-theme="dark"] .control-btn:hover {
-            background: rgba(255, 255, 255, 0.15) !important;
-        }
-
-    [data-theme="dark"] .shape {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    /* Glass Morphism Effect */
-    .glass-effect {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
     }
 </style>
 
 @code {
     private bool _isDarkMode = false;
+    private MudTheme _theme = new MudTheme()
+    {
+        Palette = new Palette()
+        {
+            Primary = "#667eea",
+            Secondary = "#764ba2",
+        },
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#667eea",
+            Secondary = "#764ba2",
+        }
+    };
 
     protected override async Task OnInitializedAsync()
     {
+        // Initialize Localization first
         await Localization.InitializeAsync();
 
-        Localization.OnLanguageChanged += async () =>
-        {
-            await InvokeAsync(StateHasChanged);
-        };
+        // Subscribe to language changes
+        Localization.OnLanguageChanged += HandleLanguageChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -293,15 +135,36 @@
         {
             try
             {
+                // Load saved theme
                 var savedTheme = await JS.InvokeAsync<string>("localStorage.getItem", "app_theme");
                 if (!string.IsNullOrEmpty(savedTheme))
                 {
                     _isDarkMode = savedTheme == "dark";
-                    StateHasChanged();
                 }
+
+                // Apply current language direction
+                await ApplyLanguageDirection();
+
+                StateHasChanged();
             }
             catch { }
         }
+    }
+
+    private async Task HandleLanguageChanged()
+    {
+        await ApplyLanguageDirection();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ApplyLanguageDirection()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", $"document.documentElement.setAttribute('dir', '{Localization.Direction}')");
+            await JS.InvokeVoidAsync("eval", $"document.documentElement.setAttribute('lang', '{Localization.CurrentLanguage}')");
+        }
+        catch { }
     }
 
     private async Task ToggleTheme()
@@ -317,6 +180,12 @@
     private async Task ToggleLanguage()
     {
         await Localization.ToggleLanguageAsync();
-        await JS.InvokeVoidAsync("location.reload");
+        // Force re-render after language change
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= HandleLanguageChanged;
     }
 }

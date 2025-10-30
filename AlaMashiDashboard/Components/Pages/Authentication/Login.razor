@@ -7,8 +7,9 @@
 @inject NavigationManager NavManager
 @inject TokenManagerService TokenManager
 @inject ISnackbar Snackbar
+@implements IDisposable
 
-<PageTitle>Login - Admin Dashboard</PageTitle>
+<PageTitle>@Localization.Get("login.title") - @Localization.Get("app.title")</PageTitle>
 
 <!-- Logo & Header -->
 <div class="auth-header fade-in">
@@ -16,10 +17,10 @@
         <MudIcon Icon="@Icons.Material.Filled.AdminPanelSettings" Size="Size.Large" Color="Color.Surface" />
     </div>
     <MudText Typo="Typo.h4" Class="auth-title mt-4">
-        @(Localization.IsArabic ? "تسجيل الدخول" : "Admin Login")
+        @Localization.Get("login.title")
     </MudText>
     <MudText Typo="Typo.body1" Class="auth-subtitle mt-2">
-        @(Localization.IsArabic ? "أدخل بياناتك للوصول إلى لوحة التحكم" : "Enter your credentials to access the dashboard")
+        @Localization.Get("login.subtitle")
     </MudText>
 </div>
 
@@ -30,15 +31,17 @@
             
             <!-- Email Field -->
             <MudTextField @bind-Value="_email"
-                          Label="@(Localization.IsArabic ? "البريد الإلكتروني" : "Email Address")"
+                          Label="@Localization.Get("login.email")"
                           Variant="Variant.Outlined"
                           FullWidth="true"
                           Immediate="true"
                           Required="true"
-                          RequiredError="@(Localization.IsArabic ? "البريد الإلكتروني مطلوب" : "Email is required")"
+                          RequiredError="@Localization.Get("login.email")"
                           Validation="@(new Func<string, string?>(email => {
-                              if (string.IsNullOrWhiteSpace(email)) return Localization.IsArabic ? "البريد الإلكتروني مطلوب" : "Email is required";
-                              if (!email.Contains("@")) return Localization.IsArabic ? "البريد الإلكتروني غير صحيح" : "Invalid email format";
+                              if (string.IsNullOrWhiteSpace(email)) 
+                                  return Localization.IsArabic ? "البريد الإلكتروني مطلوب" : "Email is required";
+                              if (!email.Contains("@")) 
+                                  return Localization.IsArabic ? "البريد الإلكتروني غير صحيح" : "Invalid email format";
                               return null;
                           }))"
                           Adornment="Adornment.Start"
@@ -49,13 +52,13 @@
 
             <!-- Password Field -->
             <MudTextField @bind-Value="_password"
-                          Label="@(Localization.IsArabic ? "كلمة المرور" : "Password")"
+                          Label="@Localization.Get("login.password")"
                           Variant="Variant.Outlined"
                           InputType="@_passwordInputType"
                           FullWidth="true"
                           Immediate="true"
                           Required="true"
-                          RequiredError="@(Localization.IsArabic ? "كلمة المرور مطلوبة" : "Password is required")"
+                          RequiredError="@Localization.Get("login.password")"
                           Adornment="Adornment.End"
                           AdornmentIcon="@_passwordIcon"
                           OnAdornmentClick="TogglePasswordVisibility"
@@ -98,11 +101,11 @@
                                          Indeterminate="true" 
                                          Class="@(Localization.IsArabic ? "ml-2" : "mr-2")" 
                                          Color="Color.Surface" />
-                    <span>@(Localization.IsArabic ? "جاري تسجيل الدخول..." : "Signing in...")</span>
+                    <span>@Localization.Get("login.signing_in")</span>
                 }
                 else
                 {
-                    <span>@(Localization.IsArabic ? "تسجيل الدخول" : "Sign In")</span>
+                    <span>@Localization.Get("login.signin")</span>
                 }
             </MudButton>
 
@@ -114,7 +117,7 @@
                        Href="/ForgotPassword"
                        StartIcon="@Icons.Material.Filled.LockReset"
                        Class="forgot-button">
-                @(Localization.IsArabic ? "نسيت كلمة المرور؟" : "Forgot Password?")
+                @Localization.Get("login.forgot_password")
             </MudButton>
 
         </MudStack>
@@ -135,6 +138,13 @@
         </MudText>
     </div>
 </MudPaper>
+
+<!-- Footer -->
+<div class="auth-footer mt-4 text-center fade-in">
+    <MudText Typo="Typo.caption" Style="color: rgba(255, 255, 255, 0.8);">
+        @Localization.Get("login.footer")
+    </MudText>
+</div>
 
 <style>
     /* Auth Header */
@@ -267,6 +277,10 @@
         font-weight: 500;
     }
 
+    .auth-footer {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
     /* Animations */
     .fade-in {
         animation: fadeIn 0.8s ease-in;
@@ -338,6 +352,17 @@
     private bool _passwordVisible = false;
     private InputType _passwordInputType = InputType.Password;
     private string _passwordIcon = Icons.Material.Filled.VisibilityOff;
+
+    protected override void OnInitialized()
+    {
+        // Subscribe to language changes
+        Localization.OnLanguageChanged += HandleLanguageChanged;
+    }
+
+    private async Task HandleLanguageChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
 
     private void TogglePasswordVisibility()
     {
@@ -416,5 +441,10 @@
             _isLoggingIn = false;
             StateHasChanged();
         }
+    }
+
+    public void Dispose()
+    {
+        Localization.OnLanguageChanged -= HandleLanguageChanged;
     }
 }

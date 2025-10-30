@@ -3,39 +3,42 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 @inject IDialogService DialogService
+@inject LocalizationService Localization
+@using AdminDashboard.Services
+@using AlaMashiDashboard.Services
 @using AlaMashi.AdminDashboard.Components.Dialogs
 
-<PageTitle>Offers Management</PageTitle>
+<PageTitle>@Localization.Get("offers.title")</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
             <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
-                <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="mr-2" />
-                Offers Management
+                <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="@(_isRtl ? "ml-2" : "mr-2")" />
+                @Localization.Get("offers.title")
             </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Create and control discounts and promotional offers</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("offers.subtitle")</MudText>
         </div>
         <div class="d-flex gap-2 mt-2 mt-md-0">
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Secondary"
                        StartIcon="@Icons.Material.Filled.Add"
                        OnClick="OpenAddDialog">
-                Add Offer
+                @Localization.Get("offers.add")
             </MudButton>
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Secondary"
                        StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="LoadDataAsync">
-                Refresh
+                @Localization.Get("common.refresh")
             </MudButton>
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        StartIcon="@Icons.Material.Filled.FileDownload"
                        OnClick="ExportToCSV"
                        Disabled="@(offersList == null || !offersList.Any())">
-                Export CSV
+                @Localization.Get("common.export")
             </MudButton>
         </div>
     </div>
@@ -44,29 +47,31 @@
 <!-- Filter Chips -->
 <MudPaper Class="pa-3 mb-4 slide-up" Elevation="1">
     <div class="d-flex flex-wrap gap-2 align-center">
-        <MudText Typo="Typo.body2" Class="mr-2">Filter by Status:</MudText>
+        <MudText Typo="Typo.body2" Class="@(_isRtl ? "ml-2" : "mr-2")">
+            @Localization.Get("common.filter"):
+        </MudText>
         <MudChip Color="@(_statusFilter == null ? Color.Primary : Color.Default)"
                  OnClick="@(() => FilterByStatus(null))"
                  Size="Size.Small">
-            All (@(offersList?.Count ?? 0))
+            @Localization.Get("common.all") (@(offersList?.Count ?? 0))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Active" ? Color.Success : Color.Default)"
                  OnClick="@(() => FilterByStatus("Active"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.CheckCircle">
-            Active (@GetStatusCount("Active"))
+            @Localization.Get("common.active") (@GetStatusCount("Active"))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Upcoming" ? Color.Info : Color.Default)"
                  OnClick="@(() => FilterByStatus("Upcoming"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Schedule">
-            Upcoming (@GetStatusCount("Upcoming"))
+            @Localization.Get("offers.upcoming") (@GetStatusCount("Upcoming"))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Expired" ? Color.Default : Color.Default)"
                  OnClick="@(() => FilterByStatus("Expired"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Cancel">
-            Expired (@GetStatusCount("Expired"))
+            @Localization.Get("offers.expired") (@GetStatusCount("Expired"))
         </MudChip>
     </div>
 </MudPaper>
@@ -77,7 +82,7 @@
         <MudCardContent>
             <div class="d-flex flex-column justify-center align-center pa-8">
                 <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading offers...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">@Localization.Get("common.loading")</MudText>
             </div>
         </MudCardContent>
     </MudCard>
@@ -95,62 +100,62 @@ else if (offersList != null && offersList.Any())
 
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString"
-                                  Placeholder="Search offers..."
+                                  Placeholder="@Localization.Get("common.search")"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   IconSize="Size.Medium"
                                   Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Class="mr-2"
+                                  Class="@(_isRtl ? "ml-2" : "mr-2")"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Showing <strong>@GetFilteredOffers().Count()</strong> of <strong>@offersList.Count</strong> offers
+                        @Localization.Get("common.showing") <strong>@GetFilteredOffers().Count()</strong> @Localization.Get("common.of") <strong>@offersList.Count</strong>
                     </MudText>
                 </ToolBarContent>
 
                 <HeaderContent>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<OfferDto, object>(x => x.OfferID)">
-                            ID
+                            @Localization.Get("offers.id")
                         </MudTableSortLabel>
                     </MudTh>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<OfferDto, object>(x => x.Title)">
-                            Title
+                            @Localization.Get("offers.title_col")
                         </MudTableSortLabel>
                     </MudTh>
-                    <MudTh>Description</MudTh>
+                    <MudTh>@Localization.Get("offers.description")</MudTh>
                     <MudTh>
                         <MudTableSortLabel SortBy="new Func<OfferDto, object>(x => x.DiscountPercentage)">
-                            Discount
+                            @Localization.Get("offers.discount")
                         </MudTableSortLabel>
                     </MudTh>
-                    <MudTh>Period</MudTh>
-                    <MudTh>Status</MudTh>
-                    <MudTh Style="text-align: right;">Actions</MudTh>
+                    <MudTh>@Localization.Get("offers.period")</MudTh>
+                    <MudTh>@Localization.Get("offers.status")</MudTh>
+                    <MudTh Style="text-align: right;">@Localization.Get("common.actions")</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
-                    <MudTd DataLabel="ID">
+                    <MudTd DataLabel="@Localization.Get("offers.id")">
                         <MudChip Size="Size.Small" Color="Color.Default">@context.OfferID</MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Title">
+                    <MudTd DataLabel="@Localization.Get("offers.title_col")">
                         <div class="d-flex align-center">
                             <MudIcon Icon="@Icons.Material.Filled.LocalOffer"
                                      Color="Color.Warning"
                                      Size="Size.Small"
-                                     Class="mr-2" />
+                                     Class="@(_isRtl ? "ml-2" : "mr-2")" />
                             <MudText Typo="Typo.body2" Class="font-weight-medium">@context.Title</MudText>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Description">
+                    <MudTd DataLabel="@Localization.Get("offers.description")">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
                             @(context.Description.Length > 40 ? context.Description.Substring(0, 40) + "..." : context.Description)
                         </MudText>
                     </MudTd>
-                    <MudTd DataLabel="Discount">
+                    <MudTd DataLabel="@Localization.Get("offers.discount")">
                         <MudChip Size="Size.Small"
                                  Color="Color.Success"
                                  Icon="@Icons.Material.Filled.Percent"
@@ -158,7 +163,7 @@ else if (offersList != null && offersList.Any())
                             @context.DiscountPercentage%
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Period">
+                    <MudTd DataLabel="@Localization.Get("offers.period")">
                         <div class="d-flex flex-column">
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
                                 <MudIcon Icon="@Icons.Material.Filled.CalendarToday" Size="Size.Small" />
@@ -170,7 +175,7 @@ else if (offersList != null && offersList.Any())
                             </MudText>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Status">
+                    <MudTd DataLabel="@Localization.Get("offers.status")">
                         @{
                             var status = GetOfferStatus(context);
                         }
@@ -179,7 +184,7 @@ else if (offersList != null && offersList.Any())
                             <MudChip Size="Size.Small"
                                      Color="Color.Success"
                                      Icon="@Icons.Material.Filled.CheckCircle">
-                                Active
+                                @Localization.Get("common.active")
                             </MudChip>
                         }
                         else if (status == "Upcoming")
@@ -187,7 +192,7 @@ else if (offersList != null && offersList.Any())
                             <MudChip Size="Size.Small"
                                      Color="Color.Info"
                                      Icon="@Icons.Material.Filled.Schedule">
-                                Upcoming
+                                @Localization.Get("offers.upcoming")
                             </MudChip>
                         }
                         else
@@ -195,24 +200,24 @@ else if (offersList != null && offersList.Any())
                             <MudChip Size="Size.Small"
                                      Color="Color.Default"
                                      Icon="@Icons.Material.Filled.Cancel">
-                                Expired
+                                @Localization.Get("offers.expired")
                             </MudChip>
                         }
                     </MudTd>
-                    <MudTd DataLabel="Actions" Style="text-align: right;">
-                        <MudTooltip Text="View Details">
+                    <MudTd DataLabel="@Localization.Get("common.actions")" Style="text-align: right;">
+                        <MudTooltip Text="@Localization.Get("common.view")">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
                                            Size="Size.Small"
                                            Color="Color.Default"
                                            OnClick="@(() => ViewOffer(context))" />
                         </MudTooltip>
-                        <MudTooltip Text="Edit">
+                        <MudTooltip Text="@Localization.Get("common.edit")">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Size="Size.Small"
                                            Color="Color.Info"
                                            OnClick="@(() => OpenEditDialog(context))" />
                         </MudTooltip>
-                        <MudTooltip Text="Delete">
+                        <MudTooltip Text="@Localization.Get("common.delete")">
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                            Size="Size.Small"
                                            Color="Color.Error"
@@ -232,16 +237,16 @@ else if (offersList != null && offersList.Any())
     <MudPaper Class="pa-3 mt-3 slide-up" Elevation="1">
         <div class="d-flex justify-space-between align-center flex-wrap gap-2">
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Total: <strong>@offersList.Count</strong>
+                @Localization.Get("common.all"): <strong>@offersList.Count</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Success">
-                Active: <strong>@GetStatusCount("Active")</strong>
+                @Localization.Get("common.active"): <strong>@GetStatusCount("Active")</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Info">
-                Upcoming: <strong>@GetStatusCount("Upcoming")</strong>
+                @Localization.Get("offers.upcoming"): <strong>@GetStatusCount("Upcoming")</strong>
             </MudText>
             <MudText Typo="Typo.body2" Color="Color.Default">
-                Expired: <strong>@GetStatusCount("Expired")</strong>
+                @Localization.Get("offers.expired"): <strong>@GetStatusCount("Expired")</strong>
             </MudText>
         </div>
     </MudPaper>
@@ -256,15 +261,15 @@ else
                          Color="Color.Secondary"
                          Class="mb-4 pulse-icon"
                          Style="font-size: 5rem;" />
-                <MudText Typo="Typo.h6" Class="mb-2">No Offers Available</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">@Localization.Get("offers.empty")</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Create your first promotional offer to attract more customers.
+                    @Localization.Get("offers.empty_msg")
                 </MudText>
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
                            OnClick="OpenAddDialog"
                            StartIcon="@Icons.Material.Filled.Add">
-                    Create First Offer
+                    @Localization.Get("offers.create_first")
                 </MudButton>
             </div>
         </MudCardContent>
@@ -302,69 +307,87 @@ else
         background-color: rgba(22, 163, 74, 0.05) !important;
         transform: scale(1.01);
     }
-
     @@keyframes slideInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-30px);
-        }
+        from
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    {
+        opacity: 0;
+        transform: translateY(-30px);
     }
 
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    }
     @@keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
+        from
 
-        to {
-            opacity: 1;
-        }
+    {
+        opacity: 0;
     }
 
-    @@keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-30px);
-        }
+    to {
+        opacity: 1;
+    }
 
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
+    }
+    @@keyframes slideInLeft {
+        from
+
+    {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
     }
 
     @@keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
+        from
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
     }
 
     @@keyframes pulse {
-        0%, 100% {
-            transform: scale(1);
-        }
+        0%, 100%
 
-        50% {
-            transform: scale(1.05);
-        }
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
     }
 </style>
 
 @code {
     private bool isLoading = true;
+    private bool _isRtl => Localization.IsArabic;
     private List<OfferDto>? offersList;
     private string _searchString = "";
     private string? _statusFilter = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += async () => await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -385,7 +408,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error loading offers: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -394,11 +417,10 @@ else
         }
     }
 
-    // ========== DIALOG METHODS ==========
     private async Task OpenAddDialog()
     {
         var dialog = await DialogService.ShowAsync<AddOfferDialog>(
-            "Create New Offer",
+            Localization.Get("offers.add"),
             new DialogOptions
             {
                 MaxWidth = MaxWidth.Small,
@@ -408,19 +430,16 @@ else
             });
 
         var result = await dialog.Result;
-
-        if (!result.Canceled)
-        {
-            await LoadDataAsync();
-        }
+        if (!result.Canceled) await LoadDataAsync();
     }
 
     private async Task OpenEditDialog(OfferDto offer)
     {
-        Snackbar.Add($"Edit feature for {offer.Title} - Coming soon", Severity.Info);
+        Snackbar.Add(Localization.IsArabic
+            ? $"ميزة التعديل لـ {offer.Title} - قريباً"
+            : $"Edit feature for {offer.Title} - Coming soon", Severity.Info);
     }
 
-    // ========== FILTER & SEARCH METHODS ==========
     private IEnumerable<OfferDto> GetFilteredOffers()
     {
         if (offersList == null) return Enumerable.Empty<OfferDto>();
@@ -458,27 +477,39 @@ else
         return offersList.Count(o => GetOfferStatus(o) == status);
     }
 
-    // ========== ACTION METHODS ==========
     private void ViewOffer(OfferDto offer)
     {
-        Snackbar.Add($"Viewing details for: {offer.Title}", Severity.Info);
+        Snackbar.Add(Localization.IsArabic
+            ? $"عرض تفاصيل: {offer.Title}"
+            : $"Viewing details for: {offer.Title}", Severity.Info);
     }
 
     private async Task DeleteOffer(OfferDto offer)
     {
+        var confirmed = await DialogService.ShowMessageBox(
+            Localization.Get("common.delete"),
+            Localization.IsArabic
+                ? $"هل أنت متأكد من حذف '{offer.Title}'؟ لا يمكن التراجع عن هذا الإجراء."
+                : $"Are you sure you want to delete '{offer.Title}'? This action cannot be undone.",
+            yesText: Localization.Get("common.delete"),
+            cancelText: Localization.Get("common.cancel"));
+
+        if (confirmed != true) return;
+
         try
         {
             await ApiService.DeleteAsync($"/api/Offers/{offer.OfferID}");
-            Snackbar.Add($"Offer '{offer.Title}' deleted successfully!", Severity.Success);
+            Snackbar.Add(Localization.IsArabic
+                ? $"تم حذف العرض '{offer.Title}' بنجاح!"
+                : $"Offer '{offer.Title}' deleted successfully!", Severity.Success);
             await LoadDataAsync();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to delete offer: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
     }
 
-    // ========== EXPORT METHOD ==========
     private async Task ExportToCSV()
     {
         if (offersList == null || !offersList.Any()) return;
@@ -497,7 +528,9 @@ else
         var base64 = Convert.ToBase64String(bytes);
         await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Offers_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
 
-        Snackbar.Add($"Exported {filtered.Count} offers successfully!", Severity.Success);
+        Snackbar.Add(Localization.IsArabic
+            ? $"تم تصدير {filtered.Count} عرض بنجاح!"
+            : $"Exported {filtered.Count} offers successfully!", Severity.Success);
     }
 
     public class OfferDto

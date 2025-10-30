@@ -1,0 +1,163 @@
+﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Edit" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.edit_category")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-2">
+            <MudTextField @bind-Value="categoryForm.CategoryName"
+                          Label="@Localization.Get("dialog.category_name")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Label"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateName))" />
+
+            <MudTextField @bind-Value="categoryForm.IconName"
+                          Label="@Localization.Get("dialog.icon_name")"
+                          Variant="Variant.Outlined"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Image"
+                          HelperText="@Localization.Get("dialog.icon_helper")" />
+
+            <MudSelect @bind-Value="categoryForm.ParentId"
+                       Label="@Localization.Get("dialog.parent_category")"
+                       Variant="Variant.Outlined"
+                       AdornmentIcon="@Icons.Material.Filled.AccountTree"
+                       Adornment="Adornment.Start">
+                <MudSelectItem Value="@((int?)null)">@Localization.Get("dialog.no_parent")</MudSelectItem>
+                @if (parentCategories != null)
+                {
+                    @foreach (var cat in parentCategories.Where(c => c.CategoryId != CategoryId))
+                    {
+                        <MudSelectItem Value="@(cat.CategoryId)">@cat.CategoryName</MudSelectItem>
+                    }
+                }
+            </MudSelect>
+
+            @if (validationErrors.Any())
+            {
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
+                    @foreach (var error in validationErrors)
+                    {
+                        <div>• @error</div>
+                    }
+                </MudAlert>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Info" Disabled="@isSubmitting" StartIcon="@Icons.Material.Filled.Save">
+            @(isSubmitting? Localization.Get("dialog.updating") : Localization.Get("dialog.update"))
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public int CategoryId { get; set; }
+    [Parameter] public string CategoryName { get; set; } = string.Empty;
+    [Parameter] public string IconName { get; set; } = string.Empty;
+    [Parameter] public int? ParentId { get; set; }
+
+    private UpdateCategoryForm categoryForm = new();
+    private List<CategoryOption> parentCategories = new();
+    private List<string> validationErrors = new();
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categoryForm.CategoryName = CategoryName;
+        categoryForm.IconName = IconName;
+        categoryForm.ParentId = ParentId;
+        await LoadParentCategories();
+    }
+
+    private async Task LoadParentCategories()
+    {
+        try
+        {
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<List<CategoryOption>>>("/api/Categories/flat");
+            parentCategories = response?.Data ?? new();
+        }
+        catch { }
+    }
+
+    public class UpdateCategoryForm
+    {
+        public string CategoryName { get; set; } = string.Empty;
+        public string IconName { get; set; } = string.Empty;
+        public int? ParentId { get; set; }
+    }
+
+    public class CategoryOption
+    {
+        [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+    }
+
+    private IEnumerable<string> ValidateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            yield return Localization.Get("validation.required");
+        else if (name.Length < 2 || name.Length > 50)
+            yield return Localization.IsArabic ? "يجب أن يكون بين 2 و 50 حرف" : "Must be between 2 and 50 characters";
+    }
+
+    private void ValidateForm()
+    {
+        validationErrors.Clear();
+        validationErrors.AddRange(ValidateName(categoryForm.CategoryName));
+    }
+
+    private async Task Submit()
+    {
+        ValidateForm();
+        if (validationErrors.Any()) return;
+
+        isSubmitting = true;
+        try
+        {
+            var updateRequest = new
+            {
+                categoryName = categoryForm.CategoryName,
+                iconName = categoryForm.IconName,
+                parentId = categoryForm.ParentId
+            };
+
+            var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Categories/{CategoryId}", updateRequest);
+
+            if (response?.Success == true)
+            {
+                Snackbar.Add(Localization.IsArabic ? "تم تحديث التصنيف بنجاح!" : "Category updated successfully!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+}

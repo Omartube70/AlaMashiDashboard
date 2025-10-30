@@ -2,32 +2,34 @@
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject LocalizationService Localization
+@using AdminDashboard.Services
 
-<PageTitle>Addresses Management</PageTitle>
+<PageTitle>@Localization.Get("addresses.title")</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
             <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
-                <MudIcon Icon="@Icons.Material.Filled.LocationOn" Class="mr-2" />
-                Addresses Management
+                <MudIcon Icon="@Icons.Material.Filled.LocationOn" Class="@(_isRtl ? "ml-2" : "mr-2")" />
+                @Localization.Get("addresses.title")
             </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Manage all delivery addresses in the system</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("addresses.subtitle")</MudText>
         </div>
         <div class="d-flex gap-2 mt-2 mt-md-0">
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Secondary"
                        StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="LoadDataAsync">
-                Refresh
+                @Localization.Get("common.refresh")
             </MudButton>
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        StartIcon="@Icons.Material.Filled.FileDownload"
                        OnClick="ExportToCSV"
                        Disabled="@(addressesList == null || !addressesList.Any())">
-                Export CSV
+                @Localization.Get("common.export")
             </MudButton>
         </div>
     </div>
@@ -36,29 +38,31 @@
 <!-- Filter Chips -->
 <MudPaper Class="pa-3 mb-4 slide-up" Elevation="1">
     <div class="d-flex flex-wrap gap-2 align-center">
-        <MudText Typo="Typo.body2" Class="mr-2">Filter by Type:</MudText>
+        <MudText Typo="Typo.body2" Class="@(_isRtl ? "ml-2" : "mr-2")">
+            @Localization.Get("common.filter"):
+        </MudText>
         <MudChip Color="@(_typeFilter == null ? Color.Primary : Color.Default)"
                  OnClick="@(() => FilterByType(null))"
                  Size="Size.Small">
-            All (@(addressesList?.Count ?? 0))
+            @Localization.Get("common.all") (@(addressesList?.Count ?? 0))
         </MudChip>
         <MudChip Color="@(_typeFilter == "home" ? Color.Info : Color.Default)"
                  OnClick="@(() => FilterByType("home"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Home">
-            Home (@GetTypeCount("home"))
+            @Localization.Get("addresses.home") (@GetTypeCount("home"))
         </MudChip>
         <MudChip Color="@(_typeFilter == "work" ? Color.Warning : Color.Default)"
                  OnClick="@(() => FilterByType("work"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Work">
-            Work (@GetTypeCount("work"))
+            @Localization.Get("addresses.work") (@GetTypeCount("work"))
         </MudChip>
         <MudChip Color="@(_typeFilter == "other" ? Color.Secondary : Color.Default)"
                  OnClick="@(() => FilterByType("other"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Place">
-            Other (@GetTypeCount("other"))
+            @Localization.Get("addresses.other") (@GetTypeCount("other"))
         </MudChip>
     </div>
 </MudPaper>
@@ -69,7 +73,7 @@
         <MudCardContent>
             <div class="d-flex flex-column justify-center align-center pa-8">
                 <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading addresses...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">@Localization.Get("common.loading")</MudText>
             </div>
         </MudCardContent>
     </MudCard>
@@ -87,78 +91,80 @@ else if (addressesList != null && addressesList.Any())
 
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString"
-                                  Placeholder="Search addresses..."
+                                  Placeholder="@Localization.Get("common.search")"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   IconSize="Size.Medium"
                                   Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Class="mr-2"
+                                  Class="@(_isRtl ? "ml-2" : "mr-2")"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Showing <strong>@GetFilteredAddresses().Count()</strong> of <strong>@addressesList.Count</strong> addresses
+                        @Localization.Get("common.showing") <strong>@GetFilteredAddresses().Count()</strong> @Localization.Get("common.of") <strong>@addressesList.Count</strong>
                     </MudText>
                 </ToolBarContent>
 
                 <HeaderContent>
-                    <MudTh><MudTableSortLabel SortBy="new Func<AddressDto, object>(x => x.AddressId)">ID</MudTableSortLabel></MudTh>
-                    <MudTh>User</MudTh>
-                    <MudTh>City</MudTh>
-                    <MudTh>Street</MudTh>
-                    <MudTh>Details</MudTh>
-                    <MudTh>Type</MudTh>
-                    <MudTh Style="text-align: right;">Actions</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<AddressDto, object>(x => x.AddressId)">@Localization.Get("addresses.id")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.Get("addresses.user")</MudTh>
+                    <MudTh>@Localization.Get("addresses.city")</MudTh>
+                    <MudTh>@Localization.Get("addresses.street")</MudTh>
+                    <MudTh>@Localization.Get("addresses.details")</MudTh>
+                    <MudTh>@Localization.Get("addresses.type")</MudTh>
+                    <MudTh Style="text-align: right;">@Localization.Get("common.actions")</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
-                    <MudTd DataLabel="ID">
+                    <MudTd DataLabel="@Localization.Get("addresses.id")">
                         <MudChip Size="Size.Small" Color="Color.Default">#@context.AddressId</MudChip>
                     </MudTd>
-                    <MudTd DataLabel="User">
+                    <MudTd DataLabel="@Localization.Get("addresses.user")">
                         <div class="d-flex align-center">
-                            <MudAvatar Size="Size.Small" Color="Color.Primary" Class="mr-2">
+                            <MudAvatar Size="Size.Small" Color="Color.Primary" Class="@(_isRtl ? "ml-2" : "mr-2")">
                                 <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" />
                             </MudAvatar>
-                            <MudText Typo="Typo.body2" Class="font-weight-medium">User #@context.UserId</MudText>
+                            <MudText Typo="Typo.body2" Class="font-weight-medium">
+                                @(Localization.IsArabic ? "مستخدم" : "User") #@context.UserId
+                            </MudText>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="City">
+                    <MudTd DataLabel="@Localization.Get("addresses.city")">
                         <div class="d-flex align-center">
-                            <MudIcon Icon="@Icons.Material.Filled.LocationCity" Size="Size.Small" Color="Color.Info" Class="mr-1" />
+                            <MudIcon Icon="@Icons.Material.Filled.LocationCity" Size="Size.Small" Color="Color.Info" Class="@(_isRtl ? "ml-1" : "mr-1")" />
                             <MudText Typo="Typo.body2">@context.City</MudText>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Street">
+                    <MudTd DataLabel="@Localization.Get("addresses.street")">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">@context.Street</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Details">
+                    <MudTd DataLabel="@Localization.Get("addresses.details")">
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
                             @(context.AddressDetails.Length > 30 ? context.AddressDetails.Substring(0, 30) + "..." : context.AddressDetails)
                         </MudText>
                     </MudTd>
-                    <MudTd DataLabel="Type">
+                    <MudTd DataLabel="@Localization.Get("addresses.type")">
                         <MudChip Size="Size.Small"
                                  Color="@GetTypeColor(context.AddressType)"
                                  Icon="@GetTypeIcon(context.AddressType)">
-                            @FormatType(context.AddressType)
+                            @GetTypeLabel(context.AddressType)
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Actions" Style="text-align: right;">
-                        <MudTooltip Text="View on Map">
+                    <MudTd DataLabel="@Localization.Get("common.actions")" Style="text-align: right;">
+                        <MudTooltip Text="@Localization.Get("addresses.map")">
                             <MudIconButton Icon="@Icons.Material.Filled.Map"
                                            Size="Size.Small"
                                            Color="Color.Default"
                                            OnClick="@(() => ViewOnMap(context))" />
                         </MudTooltip>
-                        <MudTooltip Text="Edit">
+                        <MudTooltip Text="@Localization.Get("common.edit")">
                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                            Size="Size.Small"
                                            Color="Color.Info"
                                            OnClick="@(() => EditAddress(context))" />
                         </MudTooltip>
-                        <MudTooltip Text="Delete">
+                        <MudTooltip Text="@Localization.Get("common.delete")">
                             <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                            Size="Size.Small"
                                            Color="Color.Error"
@@ -179,20 +185,20 @@ else if (addressesList != null && addressesList.Any())
         <MudGrid>
             <MudItem xs="6" sm="4">
                 <MudText Typo="Typo.body2" Color="Color.Info">
-                    <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small" Class="mr-1" />
-                    Home: <strong>@GetTypeCount("home")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("addresses.home"): <strong>@GetTypeCount("home")</strong>
                 </MudText>
             </MudItem>
             <MudItem xs="6" sm="4">
                 <MudText Typo="Typo.body2" Color="Color.Warning">
-                    <MudIcon Icon="@Icons.Material.Filled.Work" Size="Size.Small" Class="mr-1" />
-                    Work: <strong>@GetTypeCount("work")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Work" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("addresses.work"): <strong>@GetTypeCount("work")</strong>
                 </MudText>
             </MudItem>
             <MudItem xs="12" sm="4">
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Class="mr-1" />
-                    Other: <strong>@GetTypeCount("other")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Place" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("addresses.other"): <strong>@GetTypeCount("other")</strong>
                 </MudText>
             </MudItem>
         </MudGrid>
@@ -208,15 +214,15 @@ else
                          Color="Color.Secondary"
                          Class="mb-4 pulse-icon"
                          Style="font-size: 5rem;" />
-                <MudText Typo="Typo.h6" Class="mb-2">No Addresses Found</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">@Localization.Get("addresses.empty")</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Delivery addresses will appear here once users add them.
+                    @Localization.Get("addresses.empty_msg")
                 </MudText>
                 <MudButton Variant="Variant.Outlined"
                            Color="Color.Secondary"
                            OnClick="LoadDataAsync"
                            StartIcon="@Icons.Material.Filled.Refresh">
-                    Retry
+                    @Localization.Get("common.retry")
                 </MudButton>
             </div>
         </MudCardContent>
@@ -256,67 +262,85 @@ else
     }
 
     @@keyframes slideInDown {
-        from {
-            opacity: 0;
-            transform: translateY(-30px);
-        }
+        from
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    {
+        opacity: 0;
+        transform: translateY(-30px);
     }
 
-    @@keyframes fadeIn {
-        from {
-            opacity: 0;
-        }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 
-        to {
-            opacity: 1;
-        }
+    }
+    @@keyframes fadeIn {
+        from
+
+    {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
     }
 
     @@keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-30px);
-        }
+        from
 
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
+    {
+        opacity: 0;
+        transform: translateX(-30px);
     }
 
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    }
     @@keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
+        from
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    {
+        opacity: 0;
+        transform: translateY(30px);
     }
 
-    @@keyframes pulse {
-        0%, 100% {
-            transform: scale(1);
-        }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 
-        50% {
-            transform: scale(1.05);
-        }
+    }
+    @@keyframes pulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+
     }
 </style>
 
 @code {
     private bool isLoading = true;
+    private bool _isRtl => Localization.IsArabic;
     private List<AddressDto>? addressesList;
     private string _searchString = "";
     private string? _typeFilter = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += async () => await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -336,7 +360,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error loading addresses: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -382,17 +406,29 @@ else
         _ => Icons.Material.Filled.Place
     };
 
-    private string FormatType(string type) =>
-        type.Length > 0 ? char.ToUpper(type[0]) + type.Substring(1).ToLower() : type;
+    private string GetTypeLabel(string type)
+    {
+        return type.ToLower() switch
+        {
+            "home" => Localization.Get("addresses.home"),
+            "work" => Localization.Get("addresses.work"),
+            "other" => Localization.Get("addresses.other"),
+            _ => type
+        };
+    }
 
     private void ViewOnMap(AddressDto address)
     {
-        Snackbar.Add($"Opening map for: {address.City}, {address.Street}", Severity.Info);
+        Snackbar.Add(Localization.IsArabic
+            ? $"فتح الخريطة لـ: {address.City}, {address.Street}"
+            : $"Opening map for: {address.City}, {address.Street}", Severity.Info);
     }
 
     private void EditAddress(AddressDto address)
     {
-        Snackbar.Add($"Edit feature for Address #{address.AddressId} - Coming soon", Severity.Info);
+        Snackbar.Add(Localization.IsArabic
+            ? $"ميزة التعديل للعنوان #{address.AddressId} - قريباً"
+            : $"Edit feature for Address #{address.AddressId} - Coming soon", Severity.Info);
     }
 
     private async Task DeleteAddress(AddressDto address)
@@ -400,12 +436,14 @@ else
         try
         {
             await ApiService.DeleteAsync($"/api/Addresses/{address.AddressId}");
-            Snackbar.Add($"Address #{address.AddressId} deleted successfully!", Severity.Success);
+            Snackbar.Add(Localization.IsArabic
+                ? $"تم حذف العنوان #{address.AddressId} بنجاح!"
+                : $"Address #{address.AddressId} deleted successfully!", Severity.Success);
             await LoadDataAsync();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Failed to delete address: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
     }
 
@@ -426,7 +464,9 @@ else
         var base64 = Convert.ToBase64String(bytes);
         await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Addresses_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
 
-        Snackbar.Add($"Exported {filtered.Count} addresses successfully!", Severity.Success);
+        Snackbar.Add(Localization.IsArabic
+            ? $"تم تصدير {filtered.Count} عنوان بنجاح!"
+            : $"Exported {filtered.Count} addresses successfully!", Severity.Success);
     }
 
     public class AddressDto

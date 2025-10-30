@@ -1,42 +1,69 @@
-﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
+﻿@using global::AdminDashboard.Services
+@namespace AlaMashi.AdminDashboard.Components.Dialogs
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
+@inject LocalizationService Localization
 
 <MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Category" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.add_category")</MudText>
+        </div>
+    </TitleContent>
+
     <DialogContent>
-        <MudStack Spacing="3">
+        <MudStack Spacing="4" Class="pa-2">
             <MudTextField @bind-Value="categoryForm.CategoryName"
-                          Label="Category Name"
+                          Label="@Localization.Get("dialog.category_name")"
                           Variant="Variant.Outlined"
-                          Placeholder="e.g., Electronics"
-                          Validation="@(new Func<string, IEnumerable<string>>(ValidateName))" />
+                          Placeholder="@Localization.Get("dialog.category_name_placeholder")"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Label"
+                          Validation="@(new Func<string, IEnumerable<string>>(ValidateName))"
+                          Immediate="true"
+                          HelperTextOnFocus="true" />
 
             <MudTextField @bind-Value="categoryForm.IconName"
-                          Label="Icon Name"
+                          Label="@Localization.Get("dialog.icon_name")"
                           Variant="Variant.Outlined"
-                          HelperText="Material Design icon name (e.g., Devices, LocalOffer)"
-                          Placeholder="e.g., Devices" />
+                          HelperText="@Localization.Get("dialog.icon_helper")"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Image"
+                          Placeholder="Devices" />
 
             <MudSelect @bind-Value="categoryForm.ParentId"
-                       Label="Parent Category (Optional)"
+                       Label="@Localization.Get("dialog.parent_category")"
                        Variant="Variant.Outlined"
-                       AnchorOrigin="Origin.BottomCenter">
-                <MudSelectItem Value="@((int?)null)">No Parent (Root Category)</MudSelectItem>
+                       AnchorOrigin="Origin.BottomCenter"
+                       AdornmentIcon="@Icons.Material.Filled.AccountTree"
+                       Adornment="Adornment.Start">
+                <MudSelectItem Value="@((int?)null)">
+                    <div class="d-flex align-center gap-2">
+                        <MudIcon Icon="@Icons.Material.Filled.FolderSpecial" Size="Size.Small" />
+                        @Localization.Get("dialog.no_parent")
+                    </div>
+                </MudSelectItem>
                 @if (parentCategories != null && parentCategories.Any())
                 {
                     @foreach (var category in parentCategories)
                     {
-                        <MudSelectItem Value="@(category.CategoryId)">@category.CategoryName</MudSelectItem>
+                        <MudSelectItem Value="@(category.CategoryId)">
+                            <div class="d-flex align-center gap-2">
+                                <MudIcon Icon="@Icons.Material.Filled.Folder" Size="Size.Small" Color="Color.Primary" />
+                                @category.CategoryName
+                            </div>
+                        </MudSelectItem>
                     }
                 }
             </MudSelect>
 
             @if (validationErrors.Any())
             {
-                <MudAlert Severity="Severity.Error">
+                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
                     @foreach (var error in validationErrors)
                     {
-                        <div>@error</div>
+                        <MudText Typo="Typo.body2">• @error</MudText>
                     }
                 </MudAlert>
             }
@@ -44,9 +71,26 @@
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Cancel" Variant="Variant.Outlined">Cancel</MudButton>
-        <MudButton OnClick="Submit" Variant="Variant.Filled" Color="Color.Primary" Disabled="@isSubmitting">
-            @(isSubmitting ? "Creating..." : "Create Category")
+        <MudButton OnClick="Cancel" 
+                   Variant="Variant.Text" 
+                   Color="Color.Default"
+                   StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="Submit" 
+                   Variant="Variant.Filled" 
+                   Color="Color.Primary" 
+                   Disabled="@isSubmitting"
+                   StartIcon="@(isSubmitting ? "" : Icons.Material.Filled.Add)">
+            @if (isSubmitting)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span class="ml-2">@Localization.Get("dialog.creating")</span>
+            }
+            else
+            {
+                @Localization.Get("dialog.create")
+            }
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -68,14 +112,12 @@
     {
         try
         {
-            var response = await ApiService.GetAsync<ApiService.ApiResponse<List<CategoryOption>>>(
-                "/api/Categories/flat");
-
+            var response = await ApiService.GetAsync<ApiService.ApiResponse<List<CategoryOption>>>("/api/Categories/flat");
             parentCategories = response?.Data ?? new();
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error loading categories: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
     }
 
@@ -96,11 +138,11 @@
     private IEnumerable<string> ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
-            yield return "Category name is required";
+            yield return Localization.Get("validation.required");
         else if (name.Length < 2)
-            yield return "Category name must be at least 2 characters";
+            yield return Localization.IsArabic ? "يجب أن يكون اسم التصنيف على الأقل حرفين" : "Category name must be at least 2 characters";
         else if (name.Length > 50)
-            yield return "Category name must not exceed 50 characters";
+            yield return Localization.IsArabic ? "يجب ألا يتجاوز اسم التصنيف 50 حرف" : "Category name must not exceed 50 characters";
     }
 
     private void ValidateForm()
@@ -112,12 +154,9 @@
     private async Task Submit()
     {
         ValidateForm();
-
-        if (validationErrors.Any())
-            return;
+        if (validationErrors.Any()) return;
 
         isSubmitting = true;
-
         try
         {
             var createRequest = new CreateCategoryRequest
@@ -127,22 +166,21 @@
                 ParentId = categoryForm.ParentId
             };
 
-            var response = await ApiService.PostAsync<ApiService.ApiResponse<object>>(
-                "/api/Categories/Create", createRequest);
+            var response = await ApiService.PostAsync<ApiService.ApiResponse<object>>("/api/Categories/Create", createRequest);
 
             if (response?.Success == true)
             {
-                Snackbar.Add("Category created successfully!", Severity.Success);
+                Snackbar.Add(Localization.IsArabic ? "تم إنشاء التصنيف بنجاح!" : "Category created successfully!", Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));
             }
             else
             {
-                Snackbar.Add(response?.Message ?? "Failed to create category", Severity.Error);
+                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error creating category: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -150,10 +188,7 @@
         }
     }
 
-    private void Cancel()
-    {
-        MudDialog.Cancel();
-    }
+    private void Cancel() => MudDialog.Cancel();
 
     public class CreateCategoryRequest
     {

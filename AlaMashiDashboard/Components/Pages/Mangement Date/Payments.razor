@@ -2,32 +2,35 @@
 @inject ApiService ApiService
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
+@inject LocalizationService Localization
+@using AdminDashboard.Services
+@using AlaMashiDashboard.Services
 
-<PageTitle>Payments Management</PageTitle>
+<PageTitle>@Localization.Get("payments.title")</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
             <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
-                <MudIcon Icon="@Icons.Material.Filled.Payment" Class="mr-2" />
-                Payments Management
+                <MudIcon Icon="@Icons.Material.Filled.Payment" Class="@(_isRtl ? "ml-2" : "mr-2")" />
+                @Localization.Get("payments.title")
             </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Track and manage all payment transactions</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("payments.subtitle")</MudText>
         </div>
         <div class="d-flex gap-2 mt-2 mt-md-0">
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Secondary"
                        StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="LoadDataAsync">
-                Refresh
+                @Localization.Get("common.refresh")
             </MudButton>
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        StartIcon="@Icons.Material.Filled.FileDownload"
                        OnClick="ExportToCSV"
                        Disabled="@(paymentsList == null || !paymentsList.Any())">
-                Export CSV
+                @Localization.Get("common.export")
             </MudButton>
         </div>
     </div>
@@ -36,35 +39,35 @@
 <!-- Filter Chips -->
 <MudPaper Class="pa-3 mb-4 slide-up" Elevation="1">
     <div class="d-flex flex-wrap gap-2 align-center">
-        <MudText Typo="Typo.body2" Class="mr-2">Filter by Status:</MudText>
+        <MudText Typo="Typo.body2" Class="@(_isRtl ? "ml-2" : "mr-2")">@Localization.Get("payments.filter_status")</MudText>
         <MudChip Color="@(_statusFilter == null ? Color.Primary : Color.Default)"
                  OnClick="@(() => FilterByStatus(null))"
                  Size="Size.Small">
-            All (@(paymentsList?.Count ?? 0))
+            @Localization.Get("payments.all_payments") (@(paymentsList?.Count ?? 0))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Pending" ? Color.Warning : Color.Default)"
                  OnClick="@(() => FilterByStatus("Pending"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Schedule">
-            Pending (@GetStatusCount("Pending"))
+            @Localization.Get("payments.pending") (@GetStatusCount("Pending"))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Completed" ? Color.Success : Color.Default)"
                  OnClick="@(() => FilterByStatus("Completed"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.CheckCircle">
-            Completed (@GetStatusCount("Completed"))
+            @Localization.Get("payments.completed") (@GetStatusCount("Completed"))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Failed" ? Color.Error : Color.Default)"
                  OnClick="@(() => FilterByStatus("Failed"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Error">
-            Failed (@GetStatusCount("Failed"))
+            @Localization.Get("payments.failed") (@GetStatusCount("Failed"))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Canceled" ? Color.Default : Color.Default)"
                  OnClick="@(() => FilterByStatus("Canceled"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Cancel">
-            Canceled (@GetStatusCount("Canceled"))
+            @Localization.Get("payments.canceled") (@GetStatusCount("Canceled"))
         </MudChip>
     </div>
 </MudPaper>
@@ -75,7 +78,7 @@
         <MudCardContent>
             <div class="d-flex flex-column justify-center align-center pa-8">
                 <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading payments...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">@Localization.Get("payments.loading")</MudText>
             </div>
         </MudCardContent>
     </MudCard>
@@ -93,59 +96,59 @@ else if (paymentsList != null && paymentsList.Any())
 
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString"
-                                  Placeholder="Search payments..."
+                                  Placeholder="@Localization.Get("common.search")"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   IconSize="Size.Medium"
                                   Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Class="mr-2"
+                                  Class="@(_isRtl ? "ml-2" : "mr-2")"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Showing <strong>@GetFilteredPayments().Count()</strong> of <strong>@paymentsList.Count</strong> payments
+                        @Localization.Get("payments.showing") <strong>@GetFilteredPayments().Count()</strong> @Localization.Get("payments.of") <strong>@paymentsList.Count</strong> @Localization.Get("payments.payments")
                     </MudText>
                 </ToolBarContent>
 
                 <HeaderContent>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.PaymentId)">Payment ID</MudTableSortLabel></MudTh>
-                    <MudTh>Transaction ID</MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.Amount)">Amount</MudTableSortLabel></MudTh>
-                    <MudTh>Payment Method</MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.PaymentDate)">Date</MudTableSortLabel></MudTh>
-                    <MudTh>Status</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.PaymentId)">@Localization.Get("payments.payment_id")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.Get("payments.transaction_id")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.Amount)">@Localization.Get("payments.amount")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.Get("payments.payment_method")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<PaymentDto, object>(x => x.PaymentDate)">@Localization.Get("payments.payment_date")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.Get("payments.payment_status")</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
-                    <MudTd DataLabel="Payment ID">
+                    <MudTd DataLabel="@Localization.Get("payments.payment_id")">
                         <MudChip Size="Size.Small" Color="Color.Primary">#@context.PaymentId</MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Transaction ID">
+                    <MudTd DataLabel="@Localization.Get("payments.transaction_id")">
                         <div class="d-flex align-center">
-                            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" Color="Color.Secondary" Class="mr-1" />
+                            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" Color="Color.Secondary" Class="@(_isRtl ? "ml-1" : "mr-1")" />
                             <MudText Typo="Typo.body2" Class="font-weight-medium">@context.TransactionId</MudText>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Amount">
+                    <MudTd DataLabel="@Localization.Get("payments.amount")">
                         <MudChip Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.AttachMoney">
-                            @context.Amount.ToString("N2") EGP
+                            @context.Amount.ToString("N2") @Localization.Get("units.egp")
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Payment Method">
+                    <MudTd DataLabel="@Localization.Get("payments.payment_method")">
                         <MudChip Size="Size.Small" Color="Color.Info" Icon="@GetPaymentMethodIcon(context.PaymentMethod)">
-                            @FormatPaymentMethod(context.PaymentMethod)
+                            @GetLocalizedPaymentMethod(context.PaymentMethod)
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Date">
+                    <MudTd DataLabel="@Localization.Get("payments.payment_date")">
                         <MudText Typo="Typo.body2">@context.PaymentDate.ToString("dd MMM yyyy")</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">@context.PaymentDate.ToString("hh:mm tt")</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Status">
+                    <MudTd DataLabel="@Localization.Get("payments.payment_status")">
                         <MudChip Size="Size.Small"
                                  Color="@GetStatusColor(context.PaymentStatus)"
                                  Icon="@GetStatusIcon(context.PaymentStatus)">
-                            @context.PaymentStatus
+                            @GetLocalizedStatus(context.PaymentStatus)
                         </MudChip>
                     </MudTd>
                 </RowTemplate>
@@ -162,26 +165,26 @@ else if (paymentsList != null && paymentsList.Any())
         <MudGrid>
             <MudItem xs="6" sm="3">
                 <MudText Typo="Typo.body2" Color="Color.Success">
-                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
-                    Completed: <strong>@GetStatusCount("Completed")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("payments.completed"): <strong>@GetStatusCount("Completed")</strong>
                 </MudText>
             </MudItem>
             <MudItem xs="6" sm="3">
                 <MudText Typo="Typo.body2" Color="Color.Warning">
-                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Class="mr-1" />
-                    Pending: <strong>@GetStatusCount("Pending")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("payments.pending"): <strong>@GetStatusCount("Pending")</strong>
                 </MudText>
             </MudItem>
             <MudItem xs="6" sm="3">
                 <MudText Typo="Typo.body2" Color="Color.Error">
-                    <MudIcon Icon="@Icons.Material.Filled.Error" Size="Size.Small" Class="mr-1" />
-                    Failed: <strong>@GetStatusCount("Failed")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Error" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("payments.failed"): <strong>@GetStatusCount("Failed")</strong>
                 </MudText>
             </MudItem>
             <MudItem xs="6" sm="3">
                 <MudText Typo="Typo.body2" Color="Color.Info">
-                    <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Small" Class="mr-1" />
-                    Total Revenue: <strong>@GetTotalRevenue().ToString("N2") EGP</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("payments.total_revenue"): <strong>@GetTotalRevenue().ToString("N2") @Localization.Get("units.egp")</strong>
                 </MudText>
             </MudItem>
         </MudGrid>
@@ -197,15 +200,15 @@ else
                          Color="Color.Secondary"
                          Class="mb-4 pulse-icon"
                          Style="font-size: 5rem;" />
-                <MudText Typo="Typo.h6" Class="mb-2">No Payments Found</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">@Localization.Get("payments.no_payments")</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Payment transactions will appear here once orders are placed and paid.
+                    @Localization.Get("payments.no_payments_msg")
                 </MudText>
                 <MudButton Variant="Variant.Outlined"
                            Color="Color.Secondary"
                            OnClick="LoadDataAsync"
                            StartIcon="@Icons.Material.Filled.Refresh">
-                    Retry
+                    @Localization.Get("payments.retry")
                 </MudButton>
             </div>
         </MudCardContent>
@@ -303,9 +306,15 @@ else
 
 @code {
     private bool isLoading = true;
+    private bool _isRtl => Localization.IsArabic;
     private List<PaymentDto>? paymentsList;
     private string _searchString = "";
     private string? _statusFilter = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += async () => await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -325,7 +334,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error loading payments: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
             paymentsList = new List<PaymentDto>();
         }
         finally
@@ -360,6 +369,24 @@ else
 
     private decimal GetTotalRevenue() => paymentsList?.Where(p => p.PaymentStatus == "Completed").Sum(p => p.Amount) ?? 0;
 
+    private string GetLocalizedStatus(string status) => status switch
+    {
+        "Completed" => Localization.Get("payments.completed"),
+        "Pending" => Localization.Get("payments.pending"),
+        "Failed" => Localization.Get("payments.failed"),
+        "Canceled" => Localization.Get("payments.canceled"),
+        _ => status
+    };
+
+    private string GetLocalizedPaymentMethod(string method) => method.ToLower() switch
+    {
+        "cash" => Localization.Get("payments.cash"),
+        "creditcard" or "credit card" => Localization.Get("payments.credit_card"),
+        "debitcard" or "debit card" => Localization.Get("payments.debit_card"),
+        "wallet" => Localization.Get("payments.wallet"),
+        _ => method
+    };
+
     private Color GetStatusColor(string status) => status switch
     {
         "Completed" => Color.Success,
@@ -387,13 +414,6 @@ else
         _ => Icons.Material.Filled.Payment
     };
 
-    private string FormatPaymentMethod(string method) => method switch
-    {
-        "CreditCard" => "Credit Card",
-        "DebitCard" => "Debit Card",
-        _ => method
-    };
-
     private async Task ExportToCSV()
     {
         if (paymentsList == null || !paymentsList.Any()) return;
@@ -404,14 +424,16 @@ else
 
         foreach (var payment in filtered)
         {
-            csv.AppendLine($"{payment.PaymentId},{payment.TransactionId},{payment.Amount},{FormatPaymentMethod(payment.PaymentMethod)},{payment.PaymentStatus},{payment.PaymentDate:yyyy-MM-dd HH:mm}");
+            csv.AppendLine($"{payment.PaymentId},{payment.TransactionId},{payment.Amount},{GetLocalizedPaymentMethod(payment.PaymentMethod)},{GetLocalizedStatus(payment.PaymentStatus)},{payment.PaymentDate:yyyy-MM-dd HH:mm}");
         }
 
         var bytes = System.Text.Encoding.UTF8.GetBytes(csv.ToString());
         var base64 = Convert.ToBase64String(bytes);
         await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Payments_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
 
-        Snackbar.Add($"Exported {filtered.Count} payments successfully!", Severity.Success);
+        Snackbar.Add(Localization.IsArabic
+            ? $"تم تصدير {filtered.Count} معاملة بنجاح!"
+            : $"Exported {filtered.Count} payments successfully!", Severity.Success);
     }
 
     public class PaymentDto

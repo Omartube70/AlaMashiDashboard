@@ -1,0 +1,274 @@
+﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Receipt" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.order_details") #@OrderDetails.OrderId</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="3" Style="max-height: 70vh; overflow-y: auto;">
+            @* معلومات الطلب *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                <MudText Typo="Typo.h6" Color="Color.Primary" Class="mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("dialog.order_info")
+                </MudText>
+                <MudGrid Spacing="2">
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("orders.order_id")</MudText>
+                        <MudChip Size="Size.Small" Color="Color.Primary">#@OrderDetails.OrderId</MudChip>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("orders.status")</MudText>
+                        <MudChip Size="Size.Small" Color="@GetStatusColor(OrderDetails.Status)">
+                            @GetLocalizedStatus(OrderDetails.Status)
+                        </MudChip>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("orders.order_date")</MudText>
+                        <MudText Typo="Typo.body2">@OrderDetails.OrderDate.ToString("dd MMM yyyy, hh:mm tt")</MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("orders.total_amount")</MudText>
+                        <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
+                            @OrderDetails.TotalAmount.ToString("N2") @Localization.Get("units.egp")
+                        </MudText>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            @* معلومات العميل *@
+            <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                <MudText Typo="Typo.h6" Color="Color.Info" Class="mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("dialog.customer_info")
+                </MudText>
+                <MudStack Spacing="2">
+                    <div class="d-flex align-center gap-2">
+                        <MudAvatar Color="Color.Info" Size="Size.Medium">
+                            @OrderDetails.UserName?.Substring(0, 1).ToUpper()
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.body1" Class="font-weight-medium">@OrderDetails.UserName</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                <MudIcon Icon="@Icons.Material.Filled.Phone" Size="Size.Small" />
+                                @OrderDetails.UserPhone
+                            </MudText>
+                        </div>
+                    </div>
+                </MudStack>
+            </MudPaper>
+
+            @* معلومات التوصيل *@
+            @if (OrderDetails.Address != null)
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Warning" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.delivery_info")
+                    </MudText>
+                    <MudStack Spacing="1">
+                        <MudText Typo="Typo.body2">
+                            <MudIcon Icon="@Icons.Material.Filled.LocationCity" Size="Size.Small" Color="Color.Info" />
+                            <strong>@Localization.Get("addresses.city"):</strong> @OrderDetails.Address.City
+                        </MudText>
+                        <MudText Typo="Typo.body2">
+                            <MudIcon Icon="@Icons.Material.Filled.Home" Size="Size.Small" Color="Color.Secondary" />
+                            <strong>@Localization.Get("addresses.street"):</strong> @OrderDetails.Address.Street
+                        </MudText>
+                        <MudText Typo="Typo.body2">
+                            <MudIcon Icon="@Icons.Material.Filled.Details" Size="Size.Small" Color="Color.Default" />
+                            <strong>@Localization.Get("addresses.details"):</strong> @OrderDetails.Address.AddressDetails
+                        </MudText>
+                        <MudText Typo="Typo.body2">
+                            <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Color="Color.Primary" />
+                            <strong>@Localization.Get("orders.delivery_date"):</strong> 
+                            @OrderDetails.DeliveryDate.ToString("dd MMM yyyy") - @OrderDetails.DeliveryTimeSlot
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            }
+
+            @* منتجات الطلب *@
+            @if (OrderDetails.OrderDetails != null && OrderDetails.OrderDetails.Any())
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Success" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.items") (@OrderDetails.OrderDetails.Count)
+                    </MudText>
+                    <MudSimpleTable Dense="true" Hover="true" Bordered="true" Striped="true">
+                        <thead>
+                            <tr>
+                                <th>@Localization.Get("products.name")</th>
+                                <th class="text-center">@Localization.Get("dialog.quantity")</th>
+                                <th class="text-center">@Localization.Get("dialog.price")</th>
+                                <th class="text-center">@Localization.Get("orders.total_amount")</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in OrderDetails.OrderDetails)
+                            {
+                                <tr>
+                                    <td>
+                                        <MudText Typo="Typo.body2" Class="font-weight-medium">@item.ProductName</MudText>
+                                    </td>
+                                    <td class="text-center">
+                                        <MudChip Size="Size.Small" Color="Color.Info">@item.Quantity</MudChip>
+                                    </td>
+                                    <td class="text-center">@item.PriceAtOrder.ToString("N2") @Localization.Get("units.egp")</td>
+                                    <td class="text-center">
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold" Color="Color.Success">
+                                            @item.Subtotal.ToString("N2") @Localization.Get("units.egp")
+                                        </MudText>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>@Localization.Get("orders.total_amount"):</strong></td>
+                                <td class="text-center">
+                                    <MudChip Color="Color.Success" Class="font-weight-bold">
+                                        @OrderDetails.TotalAmount.ToString("N2") @Localization.Get("units.egp")
+                                    </MudChip>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </MudSimpleTable>
+                </MudPaper>
+            }
+
+            @* معلومات الدفع *@
+            @if (OrderDetails.Payments != null && OrderDetails.Payments.Any())
+            {
+                <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                    <MudText Typo="Typo.h6" Color="Color.Secondary" Class="mb-3">
+                        <MudIcon Icon="@Icons.Material.Filled.Payment" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                        @Localization.Get("dialog.payment_info")
+                    </MudText>
+                    @foreach (var payment in OrderDetails.Payments)
+                    {
+                        <MudCard Elevation="0" Outlined="true" Class="mb-2">
+                            <MudCardContent Class="pa-2">
+                                <MudGrid Spacing="1">
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("payments.payment_method")</MudText>
+                                        <MudChip Size="Size.Small" Color="Color.Info">@payment.PaymentMethod</MudChip>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("payments.payment_status")</MudText>
+                                        <MudChip Size="Size.Small" Color="@GetPaymentStatusColor(payment.Status)">@payment.Status</MudChip>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("payments.amount")</MudText>
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">@payment.Amount.ToString("N2") @Localization.Get("units.egp")</MudText>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("payments.payment_date")</MudText>
+                                        <MudText Typo="Typo.body2">@payment.PaymentDate.ToString("dd MMM yyyy")</MudText>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
+                    }
+                </MudPaper>
+            }
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Close" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.close")
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .text-center {
+        text-align: center;
+    }
+    .text-end {
+        text-align: end;
+    }
+</style>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public OrderDetailsDto OrderDetails { get; set; } = null!;
+
+    private bool _isRtl => Localization.IsArabic;
+
+    private void Close() => MudDialog.Close();
+
+    private string GetLocalizedStatus(string status) => status switch
+    {
+        "Pending" => Localization.Get("orders.pending"),
+        "InPreparation" => Localization.Get("orders.in_preparation"),
+        "OutForDelivery" => Localization.Get("orders.out_for_delivery"),
+        "Delivered" => Localization.Get("orders.delivered"),
+        "Canceled" => Localization.Get("orders.canceled"),
+        _ => status
+    };
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Pending" => Color.Warning,
+        "InPreparation" => Color.Info,
+        "OutForDelivery" => Color.Secondary,
+        "Delivered" => Color.Success,
+        "Canceled" => Color.Error,
+        _ => Color.Default
+    };
+
+    private Color GetPaymentStatusColor(string status) => status switch
+    {
+        "Completed" => Color.Success,
+        "Pending" => Color.Warning,
+        "Failed" => Color.Error,
+        _ => Color.Default
+    };
+
+    public class OrderDetailsDto
+    {
+        [JsonPropertyName("orderId")] public int OrderId { get; set; }
+        [JsonPropertyName("orderDate")] public DateTime OrderDate { get; set; }
+        [JsonPropertyName("deliveryDate")] public DateTime DeliveryDate { get; set; }
+        [JsonPropertyName("deliveryTimeSlot")] public string DeliveryTimeSlot { get; set; } = string.Empty;
+        [JsonPropertyName("totalAmount")] public decimal TotalAmount { get; set; }
+        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+        [JsonPropertyName("userName")] public string UserName { get; set; } = string.Empty;
+        [JsonPropertyName("userPhone")] public string UserPhone { get; set; } = string.Empty;
+        [JsonPropertyName("address")] public AddressDto? Address { get; set; }
+        [JsonPropertyName("orderDetails")] public List<OrderDetailDto>? OrderDetails { get; set; }
+        [JsonPropertyName("payments")] public List<PaymentDto>? Payments { get; set; }
+    }
+
+    public class AddressDto
+    {
+        [JsonPropertyName("city")] public string City { get; set; } = string.Empty;
+        [JsonPropertyName("street")] public string Street { get; set; } = string.Empty;
+        [JsonPropertyName("addressDetails")] public string AddressDetails { get; set; } = string.Empty;
+    }
+
+    public class OrderDetailDto
+    {
+        [JsonPropertyName("productName")] public string ProductName { get; set; } = string.Empty;
+        [JsonPropertyName("quantity")] public int Quantity { get; set; }
+        [JsonPropertyName("priceAtOrder")] public decimal PriceAtOrder { get; set; }
+        [JsonPropertyName("subtotal")] public decimal Subtotal { get; set; }
+    }
+
+    public class PaymentDto
+    {
+        [JsonPropertyName("amount")] public decimal Amount { get; set; }
+        [JsonPropertyName("paymentMethod")] public string PaymentMethod { get; set; } = string.Empty;
+        [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
+        [JsonPropertyName("paymentDate")] public DateTime PaymentDate { get; set; }
+    }
+}

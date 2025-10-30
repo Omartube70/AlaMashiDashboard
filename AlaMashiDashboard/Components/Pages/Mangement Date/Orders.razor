@@ -3,32 +3,35 @@
 @inject ISnackbar Snackbar
 @inject IJSRuntime JS
 @inject IDialogService DialogService
+@inject LocalizationService Localization
+@using AdminDashboard.Services
+@using AlaMashiDashboard.Services
 
-<PageTitle>Orders Management</PageTitle>
+<PageTitle>@Localization.Get("orders.title")</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 slide-in">
     <div class="d-flex justify-space-between align-center flex-wrap">
         <div>
             <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
-                <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Class="mr-2" />
-                Orders Management
+                <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Class="@(_isRtl ? "ml-2" : "mr-2")" />
+                @Localization.Get("orders.title")
             </MudText>
-            <MudText Typo="Typo.body2" Color="Color.Secondary">Track and manage all customer orders</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">@Localization.Get("orders.subtitle")</MudText>
         </div>
         <div class="d-flex gap-2 mt-2 mt-md-0">
             <MudButton Variant="Variant.Outlined"
                        Color="Color.Secondary"
                        StartIcon="@Icons.Material.Filled.Refresh"
                        OnClick="LoadDataAsync">
-                Refresh
+                @Localization.Get("common.refresh")
             </MudButton>
             <MudButton Variant="Variant.Filled"
                        Color="Color.Success"
                        StartIcon="@Icons.Material.Filled.FileDownload"
                        OnClick="ExportToCSV"
                        Disabled="@(ordersList == null || !ordersList.Any())">
-                Export CSV
+                @Localization.Get("common.export")
             </MudButton>
         </div>
     </div>
@@ -37,41 +40,41 @@
 <!-- Filter Chips -->
 <MudPaper Class="pa-3 mb-4 slide-up" Elevation="1">
     <div class="d-flex flex-wrap gap-2 align-center">
-        <MudText Typo="Typo.body2" Class="mr-2">Filter by Status:</MudText>
+        <MudText Typo="Typo.body2" Class="@(_isRtl ? "ml-2" : "mr-2")">@Localization.Get("orders.filter_status")</MudText>
         <MudChip Color="@(_statusFilter == null ? Color.Primary : Color.Default)"
                  OnClick="@(() => FilterByStatus(null))"
                  Size="Size.Small">
-            All (@(ordersList?.Count ?? 0))
+            @Localization.Get("orders.all_orders") (@(ordersList?.Count ?? 0))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Pending" ? Color.Warning : Color.Default)"
                  OnClick="@(() => FilterByStatus("Pending"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Schedule">
-            Pending (@GetStatusCount("Pending"))
+            @Localization.Get("orders.pending") (@GetStatusCount("Pending"))
         </MudChip>
         <MudChip Color="@(_statusFilter == "InPreparation" ? Color.Info : Color.Default)"
                  OnClick="@(() => FilterByStatus("InPreparation"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Inventory">
-            In Preparation (@GetStatusCount("InPreparation"))
+            @Localization.Get("orders.in_preparation") (@GetStatusCount("InPreparation"))
         </MudChip>
         <MudChip Color="@(_statusFilter == "OutForDelivery" ? Color.Secondary : Color.Default)"
                  OnClick="@(() => FilterByStatus("OutForDelivery"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.LocalShipping">
-            Out for Delivery (@GetStatusCount("OutForDelivery"))
+            @Localization.Get("orders.out_for_delivery") (@GetStatusCount("OutForDelivery"))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Delivered" ? Color.Success : Color.Default)"
                  OnClick="@(() => FilterByStatus("Delivered"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.CheckCircle">
-            Delivered (@GetStatusCount("Delivered"))
+            @Localization.Get("orders.delivered") (@GetStatusCount("Delivered"))
         </MudChip>
         <MudChip Color="@(_statusFilter == "Canceled" ? Color.Error : Color.Default)"
                  OnClick="@(() => FilterByStatus("Canceled"))"
                  Size="Size.Small"
                  Icon="@Icons.Material.Filled.Cancel">
-            Canceled (@GetStatusCount("Canceled"))
+            @Localization.Get("orders.canceled") (@GetStatusCount("Canceled"))
         </MudChip>
     </div>
 </MudPaper>
@@ -82,7 +85,7 @@
         <MudCardContent>
             <div class="d-flex flex-column justify-center align-center pa-8">
                 <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading orders...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">@Localization.Get("orders.loading")</MudText>
             </div>
         </MudCardContent>
     </MudCard>
@@ -100,38 +103,38 @@ else if (ordersList != null && ordersList.Any())
 
                 <ToolBarContent>
                     <MudTextField @bind-Value="_searchString"
-                                  Placeholder="Search orders..."
+                                  Placeholder="@Localization.Get("common.search")"
                                   Adornment="Adornment.Start"
                                   AdornmentIcon="@Icons.Material.Filled.Search"
                                   IconSize="Size.Medium"
                                   Immediate="true"
                                   Variant="Variant.Outlined"
                                   Margin="Margin.Dense"
-                                  Class="mr-2"
+                                  Class="@(_isRtl ? "ml-2" : "mr-2")"
                                   Style="max-width: 400px;" />
                     <MudSpacer />
                     <MudText Typo="Typo.body2" Color="Color.Secondary">
-                        Showing <strong>@GetFilteredOrders().Count()</strong> of <strong>@ordersList.Count</strong> orders
+                        @Localization.Get("orders.showing") <strong>@GetFilteredOrders().Count()</strong> @Localization.Get("orders.of") <strong>@ordersList.Count</strong> @Localization.Get("orders.orders")
                     </MudText>
                 </ToolBarContent>
 
                 <HeaderContent>
-                    <MudTh><MudTableSortLabel SortBy="new Func<OrderDto, object>(x => x.OrderId)">Order ID</MudTableSortLabel></MudTh>
-                    <MudTh>Customer</MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<OrderDto, object>(x => x.TotalAmount)">Total</MudTableSortLabel></MudTh>
-                    <MudTh><MudTableSortLabel SortBy="new Func<OrderDto, object>(x => x.OrderDate)">Order Date</MudTableSortLabel></MudTh>
-                    <MudTh>Delivery Date</MudTh>
-                    <MudTh>Status</MudTh>
-                    <MudTh Style="text-align: right;">Actions</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<OrderDto, object>(x => x.OrderId)">@Localization.Get("orders.order_id")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.Get("orders.customer_name")</MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<OrderDto, object>(x => x.TotalAmount)">@Localization.Get("orders.total_amount")</MudTableSortLabel></MudTh>
+                    <MudTh><MudTableSortLabel SortBy="new Func<OrderDto, object>(x => x.OrderDate)">@Localization.Get("orders.order_date")</MudTableSortLabel></MudTh>
+                    <MudTh>@Localization.Get("orders.delivery_date")</MudTh>
+                    <MudTh>@Localization.Get("orders.status")</MudTh>
+                    <MudTh Style="text-align: right;">@Localization.Get("common.actions")</MudTh>
                 </HeaderContent>
 
                 <RowTemplate>
-                    <MudTd DataLabel="Order ID">
+                    <MudTd DataLabel="@Localization.Get("orders.order_id")">
                         <MudChip Size="Size.Small" Color="Color.Primary">#@context.OrderId</MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Customer">
+                    <MudTd DataLabel="@Localization.Get("orders.customer_name")">
                         <div class="d-flex align-center">
-                            <MudAvatar Size="Size.Small" Color="Color.Info" Class="mr-2">
+                            <MudAvatar Size="Size.Small" Color="Color.Info" Class="@(_isRtl ? "ml-2" : "mr-2")">
                                 @context.UserName?.Substring(0, 1).ToUpper()
                             </MudAvatar>
                             <div>
@@ -143,28 +146,28 @@ else if (ordersList != null && ordersList.Any())
                             </div>
                         </div>
                     </MudTd>
-                    <MudTd DataLabel="Total">
+                    <MudTd DataLabel="@Localization.Get("orders.total_amount")">
                         <MudChip Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.AttachMoney">
-                            @context.TotalAmount.ToString("N2") EGP
+                            @context.TotalAmount.ToString("N2") @Localization.Get("units.egp")
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Order Date">
+                    <MudTd DataLabel="@Localization.Get("orders.order_date")">
                         <MudText Typo="Typo.body2">@context.OrderDate.ToString("dd MMM yyyy")</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">@context.OrderDate.ToString("hh:mm tt")</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Delivery Date">
+                    <MudTd DataLabel="@Localization.Get("orders.delivery_date")">
                         <MudText Typo="Typo.body2">@context.DeliveryDate.ToString("dd MMM yyyy")</MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">@context.DeliveryTimeSlot</MudText>
                     </MudTd>
-                    <MudTd DataLabel="Status">
+                    <MudTd DataLabel="@Localization.Get("orders.status")">
                         <MudChip Size="Size.Small"
                                  Color="@GetStatusColor(context.Status)"
                                  Icon="@GetStatusIcon(context.Status)">
-                            @FormatStatus(context.Status)
+                            @GetLocalizedStatus(context.Status)
                         </MudChip>
                     </MudTd>
-                    <MudTd DataLabel="Actions" Style="text-align: right;">
-                        <MudTooltip Text="View Details">
+                    <MudTd DataLabel="@Localization.Get("common.actions")" Style="text-align: right;">
+                        <MudTooltip Text="@Localization.Get("orders.view_details")">
                             <MudIconButton Icon="@Icons.Material.Filled.Visibility"
                                            Size="Size.Small"
                                            Color="Color.Default"
@@ -172,7 +175,7 @@ else if (ordersList != null && ordersList.Any())
                         </MudTooltip>
                         @if (context.Status != "Delivered" && context.Status != "Canceled")
                         {
-                            <MudTooltip Text="Update Status">
+                            <MudTooltip Text="@Localization.Get("orders.update_status")">
                                 <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                Size="Size.Small"
                                                Color="Color.Info"
@@ -194,26 +197,26 @@ else if (ordersList != null && ordersList.Any())
         <MudGrid>
             <MudItem xs="6" sm="3">
                 <MudText Typo="Typo.body2" Color="Color.Warning">
-                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Class="mr-1" />
-                    Pending: <strong>@GetStatusCount("Pending")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Schedule" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("orders.pending"): <strong>@GetStatusCount("Pending")</strong>
                 </MudText>
             </MudItem>
             <MudItem xs="6" sm="3">
                 <MudText Typo="Typo.body2" Color="Color.Info">
-                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="mr-1" />
-                    In Preparation: <strong>@GetStatusCount("InPreparation")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.Inventory" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("orders.in_preparation"): <strong>@GetStatusCount("InPreparation")</strong>
                 </MudText>
             </MudItem>
             <MudItem xs="6" sm="3">
                 <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Size="Size.Small" Class="mr-1" />
-                    Out for Delivery: <strong>@GetStatusCount("OutForDelivery")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.LocalShipping" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("orders.out_for_delivery"): <strong>@GetStatusCount("OutForDelivery")</strong>
                 </MudText>
             </MudItem>
             <MudItem xs="6" sm="3">
                 <MudText Typo="Typo.body2" Color="Color.Success">
-                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
-                    Delivered: <strong>@GetStatusCount("Delivered")</strong>
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("orders.delivered"): <strong>@GetStatusCount("Delivered")</strong>
                 </MudText>
             </MudItem>
         </MudGrid>
@@ -229,15 +232,15 @@ else
                          Color="Color.Secondary"
                          Class="mb-4 pulse-icon"
                          Style="font-size: 5rem;" />
-                <MudText Typo="Typo.h6" Class="mb-2">No Orders Found</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">@Localization.Get("orders.no_orders")</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Orders will appear here once customers start placing them.
+                    @Localization.Get("orders.no_orders_msg")
                 </MudText>
                 <MudButton Variant="Variant.Outlined"
                            Color="Color.Secondary"
                            OnClick="LoadDataAsync"
                            StartIcon="@Icons.Material.Filled.Refresh">
-                    Retry
+                    @Localization.Get("orders.retry")
                 </MudButton>
             </div>
         </MudCardContent>
@@ -245,32 +248,105 @@ else
 }
 
 <style>
-    .page-header { animation: slideInDown 0.5s ease-out; }
-    .fade-in { animation: fadeIn 0.5s ease-in; }
-    .slide-in { animation: slideInLeft 0.5s ease-out; }
-    .slide-up { animation: slideUp 0.5s ease-out; }
-    .pulse-icon { animation: pulse 3s infinite; }
+    .page-header {
+        animation: slideInDown 0.5s ease-out;
+    }
+
+    .fade-in {
+        animation: fadeIn 0.5s ease-in;
+    }
+
+    .slide-in {
+        animation: slideInLeft 0.5s ease-out;
+    }
+
+    .slide-up {
+        animation: slideUp 0.5s ease-out;
+    }
+
+    .pulse-icon {
+        animation: pulse 3s infinite;
+    }
+
     .data-table-card {
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     }
+
     ::deep .mud-table-row:hover {
         background-color: rgba(22, 163, 74, 0.05) !important;
         transform: scale(1.01);
     }
-    @@keyframes slideInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
-    @@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @@keyframes slideInLeft { from { opacity: 0; transform: translateX(-30px); } to { opacity: 1; transform: translateX(0); } }
-    @@keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    @@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+    @@keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
 </style>
 
 @code {
     private bool isLoading = true;
+    private bool _isRtl => Localization.IsArabic;
     private List<OrderDto>? ordersList;
     private string _searchString = "";
     private string? _statusFilter = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += async () => await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -290,7 +366,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error loading orders: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -322,6 +398,16 @@ else
 
     private int GetStatusCount(string status) => ordersList?.Count(o => o.Status == status) ?? 0;
 
+    private string GetLocalizedStatus(string status) => status switch
+    {
+        "Pending" => Localization.Get("orders.pending"),
+        "InPreparation" => Localization.Get("orders.in_preparation"),
+        "OutForDelivery" => Localization.Get("orders.out_for_delivery"),
+        "Delivered" => Localization.Get("orders.delivered"),
+        "Canceled" => Localization.Get("orders.canceled"),
+        _ => status
+    };
+
     private Color GetStatusColor(string status) => status switch
     {
         "Pending" => Color.Warning,
@@ -342,13 +428,6 @@ else
         _ => Icons.Material.Filled.Info
     };
 
-    private string FormatStatus(string status) => status switch
-    {
-        "InPreparation" => "In Preparation",
-        "OutForDelivery" => "Out for Delivery",
-        _ => status
-    };
-
     private async Task ShowUpdateStatusDialog(OrderDto order)
     {
         var statuses = new[] { "Pending", "InPreparation", "OutForDelivery", "Delivered" };
@@ -356,7 +435,9 @@ else
 
         if (currentIndex >= statuses.Length - 1)
         {
-            Snackbar.Add("Order is already at final status", Severity.Info);
+            Snackbar.Add(Localization.IsArabic
+                ? "الطلب وصل للحالة النهائية"
+                : "Order is already at final status", Severity.Info);
             return;
         }
 
@@ -367,7 +448,8 @@ else
             ["NextStatus"] = statuses[currentIndex + 1]
         };
 
-        var dialog = await DialogService.ShowAsync<UpdateStatusDialog>("Update Order Status", parameters);
+        var dialog = await DialogService.ShowAsync<UpdateStatusDialog>(
+            Localization.Get("orders.update_status"), parameters);
         var result = await dialog.Result;
 
         if (!result.Canceled)
@@ -385,16 +467,19 @@ else
             if (response?.Data != null)
             {
                 var parameters = new DialogParameters { ["OrderDetails"] = response.Data };
-                await DialogService.ShowAsync<OrderDetailsDialog>("Order Details", parameters, new DialogOptions
-                {
-                    MaxWidth = MaxWidth.Medium,
-                    FullWidth = true
-                });
+                await DialogService.ShowAsync<OrderDetailsDialog>(
+                    Localization.Get("orders.view_details"),
+                    parameters,
+                    new DialogOptions
+                    {
+                        MaxWidth = MaxWidth.Medium,
+                        FullWidth = true
+                    });
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error loading order details: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
     }
 
@@ -415,7 +500,9 @@ else
         var base64 = Convert.ToBase64String(bytes);
         await JS.InvokeVoidAsync("eval", $"(function(){{var a=document.createElement('a');a.href='data:text/csv;base64,{base64}';a.download='Orders_{DateTime.Now:yyyyMMdd_HHmmss}.csv';a.click();}})()");
 
-        Snackbar.Add($"Exported {filtered.Count} orders successfully!", Severity.Success);
+        Snackbar.Add(Localization.IsArabic
+            ? $"تم تصدير {filtered.Count} طلب بنجاح!"
+            : $"Exported {filtered.Count} orders successfully!", Severity.Success);
     }
 
     public class OrderDto
@@ -465,10 +552,7 @@ else
         [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
         [JsonPropertyName("paymentDate")] public DateTime PaymentDate { get; set; }
     }
-}
 
-@* Order Details Dialog Component *@
-@code {
     public class OrderDetailsDialog : ComponentBase
     {
         [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
@@ -476,7 +560,6 @@ else
 
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
         {
-            // Dialog content will be rendered here
         }
     }
 
@@ -489,7 +572,6 @@ else
 
         protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
         {
-            // Dialog content will be rendered here
         }
     }
 }

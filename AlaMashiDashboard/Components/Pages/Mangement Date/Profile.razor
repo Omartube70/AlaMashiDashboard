@@ -3,19 +3,21 @@
 @inject ISnackbar Snackbar
 @inject TokenManagerService TokenManager
 @inject NavigationManager NavManager
+@inject LocalizationService Localization
 @using System.Text.RegularExpressions
 @using AlaMashiDashboard.Services
+@using AdminDashboard.Services
 
-<PageTitle>Profile Settings - AlaMashi</PageTitle>
+<PageTitle>@Localization.Get("profile.title") - @Localization.Get("app.title")</PageTitle>
 
 <!-- Page Header -->
 <div class="page-header mb-4 fade-in">
     <MudText Typo="Typo.h4" Class="font-weight-bold mb-2">
-        <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Class="mr-2" />
-        Profile Settings
+        <MudIcon Icon="@Icons.Material.Filled.AccountCircle" Class="@(_isRtl ? "ml-2" : "mr-2")" />
+        @Localization.Get("profile.title")
     </MudText>
     <MudText Typo="Typo.body2" Color="Color.Secondary">
-        Manage your account information and preferences
+        @Localization.Get("profile.subtitle")
     </MudText>
 </div>
 
@@ -25,7 +27,7 @@
         <MudCardContent Class="pa-8">
             <div class="d-flex flex-column align-center justify-center">
                 <MudProgressCircular Indeterminate="true" Size="Size.Large" Color="Color.Primary" />
-                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">Loading profile...</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-4">@Localization.Get("profile.loading")</MudText>
             </div>
         </MudCardContent>
     </MudCard>
@@ -35,34 +37,34 @@ else if (userProfile != null)
     <MudGrid Spacing="3">
         <!-- Personal Information -->
         <MudItem xs="12" md="8">
-            <MudCard Elevation="2">
+            <MudCard Elevation="2" Class="slide-in">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Personal Information</MudText>
+                        <MudText Typo="Typo.h6">@Localization.Get("profile.personal")</MudText>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent>
                     <MudStack Spacing="3">
                         <MudTextField @bind-Value="userProfile.UserName"
-                                      Label="Username"
+                                      Label="@Localization.Get("profile.username")"
                                       Variant="Variant.Outlined"
                                       Disabled="true"
-                                      HelperText="Username cannot be changed" />
+                                      HelperText="@Localization.Get("profile.username_note")" />
 
                         <MudTextField @bind-Value="editForm.Email"
-                                      Label="Email"
+                                      Label="@Localization.Get("profile.email")"
                                       Variant="Variant.Outlined"
                                       InputType="InputType.Email"
                                       Validation="@(new Func<string, IEnumerable<string>>(ValidateEmail))" />
 
                         <MudTextField @bind-Value="editForm.Phone"
-                                      Label="Phone"
+                                      Label="@Localization.Get("profile.phone")"
                                       Variant="Variant.Outlined"
                                       InputType="InputType.Text"
                                       Validation="@(new Func<string, IEnumerable<string>>(ValidatePhone))" />
 
                         <MudText Typo="Typo.body2" Color="Color.Secondary">
-                            <strong>Role:</strong> @userProfile.UserRole
+                            <strong>@Localization.Get("profile.role"):</strong> @GetRoleLabel(userProfile.UserRole)
                         </MudText>
                     </MudStack>
                 </MudCardContent>
@@ -71,23 +73,23 @@ else if (userProfile != null)
 
         <!-- Account Status -->
         <MudItem xs="12" md="4">
-            <MudCard Elevation="2">
+            <MudCard Elevation="2" Class="slide-in" Style="animation-delay: 0.1s;">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Account Status</MudText>
+                        <MudText Typo="Typo.h6">@Localization.Get("profile.account")</MudText>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent>
                     <MudStack Spacing="2">
                         <div class="d-flex justify-space-between align-center">
-                            <MudText Typo="Typo.body2">Status:</MudText>
+                            <MudText Typo="Typo.body2">@Localization.Get("profile.status"):</MudText>
                             <MudChip Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small">
-                                Active
+                                @Localization.Get("profile.active")
                             </MudChip>
                         </div>
                         <MudDivider />
                         <div class="d-flex justify-space-between align-center">
-                            <MudText Typo="Typo.body2">Member Since:</MudText>
+                            <MudText Typo="Typo.body2">@Localization.Get("profile.member_since"):</MudText>
                             <MudText Typo="Typo.caption" Color="Color.Secondary">
                                 @DateTime.Now.ToString("MMM dd, yyyy")
                             </MudText>
@@ -99,39 +101,39 @@ else if (userProfile != null)
 
         <!-- Change Password -->
         <MudItem xs="12" md="8">
-            <MudCard Elevation="2">
+            <MudCard Elevation="2" Class="slide-up">
                 <MudCardHeader>
                     <CardHeaderContent>
-                        <MudText Typo="Typo.h6">Change Password</MudText>
+                        <MudText Typo="Typo.h6">@Localization.Get("profile.change_password")</MudText>
                     </CardHeaderContent>
                 </MudCardHeader>
                 <MudCardContent>
                     <MudStack Spacing="3">
                         <MudTextField @bind-Value="passwordForm.CurrentPassword"
-                                      Label="Current Password"
+                                      Label="@Localization.Get("profile.current_password")"
                                       Variant="Variant.Outlined"
                                       InputType="@(showCurrentPassword? InputType.Text: InputType.Password)"
                                       AdornmentIcon="@(showCurrentPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
                                       OnAdornmentClick="@((MouseEventArgs e) => showCurrentPassword = !showCurrentPassword)"
-                                      AdornmentPosition="AdornmentPosition.End" />
+                                      Adornment="Adornment.End" />
 
                         <MudTextField @bind-Value="passwordForm.NewPassword"
-                                      Label="New Password"
+                                      Label="@Localization.Get("profile.new_password")"
                                       Variant="Variant.Outlined"
                                       InputType="@(showNewPassword? InputType.Text: InputType.Password)"
                                       AdornmentIcon="@(showNewPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
                                       OnAdornmentClick="@((MouseEventArgs e) => showNewPassword = !showNewPassword)"
-                                      AdornmentPosition="AdornmentPosition.End"
-                                      HelperText="Min 8 characters with number and special char"
+                                      Adornment="Adornment.End"
+                                      HelperText="@Localization.Get("profile.password_helper")"
                                       Validation="@(new Func<string, IEnumerable<string>>(ValidatePassword))" />
 
                         <MudTextField @bind-Value="passwordForm.ConfirmPassword"
-                                      Label="Confirm Password"
+                                      Label="@Localization.Get("profile.confirm_password")"
                                       Variant="Variant.Outlined"
                                       InputType="@(showConfirmPassword? InputType.Text: InputType.Password)"
                                       AdornmentIcon="@(showConfirmPassword? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
                                       OnAdornmentClick="@((MouseEventArgs e) => showConfirmPassword = !showConfirmPassword)"
-                                      AdornmentPosition="AdornmentPosition.End" />
+                                      Adornment="Adornment.End" />
                     </MudStack>
                 </MudCardContent>
             </MudCard>
@@ -139,16 +141,17 @@ else if (userProfile != null)
 
         <!-- Action Buttons -->
         <MudItem xs="12">
-            <div class="d-flex gap-2 justify-end">
+            <div class="d-flex gap-2 @(_isRtl ? "justify-start" : "justify-end")">
                 <MudButton Variant="Variant.Outlined"
                            Color="Color.Secondary"
                            OnClick="ResetForm">
-                    Cancel
+                    @Localization.Get("profile.cancel")
                 </MudButton>
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           OnClick="UpdateProfile">
-                    Save Changes
+                           OnClick="UpdateProfile"
+                           StartIcon="@Icons.Material.Filled.Save">
+                    @Localization.Get("profile.save")
                 </MudButton>
             </div>
         </MudItem>
@@ -164,14 +167,15 @@ else
                          Color="Color.Error"
                          Class="mb-4"
                          Style="font-size: 5rem;" />
-                <MudText Typo="Typo.h6" Class="mb-2">Failed to Load Profile</MudText>
+                <MudText Typo="Typo.h6" Class="mb-2">@Localization.Get("profile.error")</MudText>
                 <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
-                    Unable to fetch your profile. Please try again.
+                    @Localization.Get("profile.error_msg")
                 </MudText>
                 <MudButton Variant="Variant.Filled"
                            Color="Color.Primary"
-                           OnClick="LoadProfileAsync">
-                    Retry
+                           OnClick="LoadProfileAsync"
+                           StartIcon="@Icons.Material.Filled.Refresh">
+                    @Localization.Get("common.retry")
                 </MudButton>
             </div>
         </MudCardContent>
@@ -185,6 +189,14 @@ else
 
     .fade-in {
         animation: fadeIn 0.5s ease-in;
+    }
+
+    .slide-in {
+        animation: slideIn 0.5s ease-out;
+    }
+
+    .slide-up {
+        animation: slideUp 0.5s ease-out;
     }
 
     @@keyframes slideInDown {
@@ -208,14 +220,61 @@ else
             opacity: 1;
         }
     }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* RTL Adjustments */
+    [dir="rtl"] .slide-in {
+        animation: slideInRTL 0.5s ease-out;
+    }
+
+    @@keyframes slideInRTL {
+        from {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
 </style>
 
 @code {
     private bool isLoading = true;
+    private bool _isRtl => Localization.IsArabic;
     private UserProfileDto userProfile = null!;
     private EditProfileForm editForm = new();
     private ChangePasswordForm passwordForm = new();
     private bool showCurrentPassword, showNewPassword, showConfirmPassword;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Localization.OnLanguageChanged += async () => await InvokeAsync(StateHasChanged);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -249,7 +308,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error loading profile: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
         finally
         {
@@ -269,7 +328,7 @@ else
 
             if (!emailChanged && !phoneChanged && !passwordChanged)
             {
-                Snackbar.Add("No changes to save", Severity.Info);
+                Snackbar.Add(Localization.Get("profile.no_changes"), Severity.Info);
                 return;
             }
 
@@ -297,7 +356,7 @@ else
             var userId = await TokenManager.GetUserIdAsync();
             if (userId == null)
             {
-                Snackbar.Add("User ID not found", Severity.Error);
+                Snackbar.Add(Localization.IsArabic ? "لم يتم العثور على معرف المستخدم" : "User ID not found", Severity.Error);
                 return;
             }
 
@@ -315,17 +374,19 @@ else
 
                 if (response == null)
                 {
-                    Snackbar.Add("Failed to update profile. Please check your data.", Severity.Error);
+                    Snackbar.Add(Localization.IsArabic
+                        ? "فشل تحديث الملف الشخصي. يرجى التحقق من البيانات."
+                        : "Failed to update profile. Please check your data.", Severity.Error);
                     return;
                 }
 
                 if (response.Success == false)
                 {
-                    Snackbar.Add(response.Message ?? "Failed to update profile", Severity.Error);
+                    Snackbar.Add(response.Message ?? Localization.Get("common.failed"), Severity.Error);
                     return;
                 }
 
-                Snackbar.Add("✅ تم تحديث بيانات البروفايل بنجاح!", Severity.Success);
+                Snackbar.Add(Localization.Get("profile.updated"), Severity.Success);
             }
 
             // تحديث كلمة المرور إذا تم ملء الحقول
@@ -333,7 +394,7 @@ else
             {
                 if (passwordForm.NewPassword != passwordForm.ConfirmPassword)
                 {
-                    Snackbar.Add("Passwords do not match", Severity.Warning);
+                    Snackbar.Add(Localization.Get("profile.passwords_not_match"), Severity.Warning);
                     return;
                 }
 
@@ -355,11 +416,11 @@ else
 
                 if (passwordResponse == null || passwordResponse.Success == false)
                 {
-                    Snackbar.Add(passwordResponse?.Message ?? "Failed to change password", Severity.Error);
+                    Snackbar.Add(passwordResponse?.Message ?? Localization.Get("common.failed"), Severity.Error);
                     return;
                 }
 
-                Snackbar.Add("Password changed successfully!", Severity.Success);
+                Snackbar.Add(Localization.Get("profile.password_updated"), Severity.Success);
             }
 
             ResetForm();
@@ -368,7 +429,7 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error updating profile: {ex.Message}", Severity.Error);
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
         }
     }
 
@@ -383,6 +444,16 @@ else
         showCurrentPassword = showNewPassword = showConfirmPassword = false;
     }
 
+    private string GetRoleLabel(string role)
+    {
+        return role switch
+        {
+            "Admin" => Localization.Get("users.admin"),
+            "User" => Localization.Get("users.user"),
+            _ => role
+        };
+    }
+
     private IEnumerable<string> ValidateEmail(string email)
     {
         var error = InputValidator.ValidateEmail(email);
@@ -395,7 +466,9 @@ else
         if (!string.IsNullOrWhiteSpace(phone))
         {
             if (!Regex.IsMatch(phone, @"^\d{10,}$"))
-                yield return "Phone must be at least 10 digits";
+                yield return Localization.IsArabic
+                    ? "يجب أن يحتوي الهاتف على 10 أرقام على الأقل"
+                    : "Phone must be at least 10 digits";
         }
     }
 

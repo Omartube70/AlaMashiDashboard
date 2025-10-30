@@ -1,0 +1,154 @@
+﻿@namespace AlaMashi.AdminDashboard.Components.Dialogs
+@using global::AdminDashboard.Services
+@inject ApiService ApiService
+@inject ISnackbar Snackbar
+@inject LocalizationService Localization
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Update" Color="Color.Info" />
+            <MudText Typo="Typo.h6">@Localization.Get("dialog.update_order_status")</MudText>
+        </div>
+    </TitleContent>
+
+    <DialogContent>
+        <MudStack Spacing="4" Class="pa-3">
+            <MudAlert Severity="Severity.Info" Variant="Variant.Outlined" Dense="true">
+                @Localization.Get("dialog.status_confirmation")
+            </MudAlert>
+
+            <MudPaper Elevation="0" Outlined="true" Class="pa-3">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@Localization.Get("orders.order_id")</MudText>
+                        <MudChip Size="Size.Medium" Color="Color.Primary" Icon="@Icons.Material.Filled.Receipt">
+                            #@OrderId
+                        </MudChip>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
+                            @Localization.Get("dialog.current_status")
+                        </MudText>
+                        <MudChip Size="Size.Medium"
+                                 Color="@GetStatusColor(CurrentStatus)"
+                                 Icon="@GetStatusIcon(CurrentStatus)">
+                            @GetLocalizedStatus(CurrentStatus)
+                        </MudChip>
+                    </MudItem>
+
+                    <MudItem xs="12" sm="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-2">
+                            @Localization.Get("dialog.new_status")
+                        </MudText>
+                        <MudChip Size="Size.Medium"
+                                 Color="@GetStatusColor(NextStatus)"
+                                 Icon="@GetStatusIcon(NextStatus)">
+                            @GetLocalizedStatus(NextStatus)
+                        </MudChip>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+
+            <div class="d-flex align-center justify-center">
+                <MudIcon Icon="@Icons.Material.Filled.ArrowDownward" Color="Color.Success" Size="Size.Large" />
+            </div>
+        </MudStack>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel"
+                   Variant="Variant.Text"
+                   StartIcon="@Icons.Material.Filled.Close">
+            @Localization.Get("common.cancel")
+        </MudButton>
+        <MudButton OnClick="UpdateStatus"
+                   Variant="Variant.Filled"
+                   Color="Color.Success"
+                   Disabled="@isUpdating"
+                   StartIcon="@Icons.Material.Filled.Check">
+            @if (isUpdating)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span class="ml-2">@Localization.Get("dialog.updating")</span>
+            }
+            else
+            {
+                @Localization.Get("dialog.update")
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public int OrderId { get; set; }
+    [Parameter] public string CurrentStatus { get; set; } = string.Empty;
+    [Parameter] public string NextStatus { get; set; } = string.Empty;
+
+    private bool isUpdating = false;
+
+    private async Task UpdateStatus()
+    {
+        isUpdating = true;
+        try
+        {
+            var updateRequest = new { status = NextStatus };
+            var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>(
+                $"/api/Orders/{OrderId}/status", updateRequest);
+
+            if (response?.Success == true)
+            {
+                Snackbar.Add(Localization.IsArabic
+                    ? "تم تحديث حالة الطلب بنجاح!"
+                    : "Order status updated successfully!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"{Localization.Get("common.error")}: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isUpdating = false;
+        }
+    }
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private string GetLocalizedStatus(string status) => status switch
+    {
+        "Pending" => Localization.Get("orders.pending"),
+        "InPreparation" => Localization.Get("orders.in_preparation"),
+        "OutForDelivery" => Localization.Get("orders.out_for_delivery"),
+        "Delivered" => Localization.Get("orders.delivered"),
+        "Canceled" => Localization.Get("orders.canceled"),
+        _ => status
+    };
+
+    private Color GetStatusColor(string status) => status switch
+    {
+        "Pending" => Color.Warning,
+        "InPreparation" => Color.Info,
+        "OutForDelivery" => Color.Secondary,
+        "Delivered" => Color.Success,
+        "Canceled" => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetStatusIcon(string status) => status switch
+    {
+        "Pending" => Icons.Material.Filled.Schedule,
+        "InPreparation" => Icons.Material.Filled.Inventory,
+        "OutForDelivery" => Icons.Material.Filled.LocalShipping,
+        "Delivered" => Icons.Material.Filled.CheckCircle,
+        "Canceled" => Icons.Material.Filled.Cancel,
+        _ => Icons.Material.Filled.Info
+    };
+}
