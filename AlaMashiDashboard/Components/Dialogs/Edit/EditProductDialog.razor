@@ -265,7 +265,7 @@
 
                 var response = await ApiService.PatchMultipartAsync<ApiService.ApiResponse<object>>($"/api/Products/{ProductID}", content);
 
-                if (response?.Success == true)
+                if (response?.Status == "success")
                 {
                     Snackbar.Add(Localization.Get("common.product_updated"), Severity.Success);
                     MudDialog.Close(DialogResult.Ok(true));
@@ -289,7 +289,7 @@
 
                 var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Products/{ProductID}", updateRequest);
 
-                if (response?.Success == true)
+                 if (response?.Status == "success")
                 {
                     Snackbar.Add(Localization.Get("common.product_updated"), Severity.Success);
                     MudDialog.Close(DialogResult.Ok(true));

@@ -314,7 +314,7 @@
             var response = await ApiService.PostMultipartAsync<ApiService.ApiResponse<object>>(
                 "/api/Products/Create", content);
 
-            if (response?.Success == true)
+            if (response?.Status == "success")
             {
                 Snackbar.Add(Localization.Get("common.product_created"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));

@@ -113,7 +113,7 @@
 
             var response = await ApiService.PatchJsonAsync<ApiService.ApiResponse<object>>($"/api/Categories/{CategoryId}", updateRequest);
 
-            if (response?.Success == true)
+            if (response?.Status == "success")
             {
                 Snackbar.Add(Localization.Get("common.category_updated"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));

@@ -120,7 +120,7 @@
 
             var response = await ApiService.PostAsync<ApiService.ApiResponse<object>>("/api/Categories/Create", createRequest);
 
-            if (response?.Success == true)
+            if (response?.Status == "success")
             {
                 Snackbar.Add(Localization.Get("common.category_created"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));

@@ -194,7 +194,7 @@
             var response = await ApiService.PostAsync<ApiService.ApiResponse<object>>(
                 "/api/Offers/Create", createRequest);
 
-            if (response?.Success == true)
+            if (response?.Status == "success")
             {
                 Snackbar.Add(Localization.Get("common.offer_created"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));

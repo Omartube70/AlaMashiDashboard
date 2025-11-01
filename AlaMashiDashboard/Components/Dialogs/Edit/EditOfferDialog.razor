@@ -165,7 +165,7 @@
 
             var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Offers/{OfferID}", updateRequest);
 
-            if (response?.Success == true)
+            if (response?.Status == "success")
             {
                 Snackbar.Add(Localization.Get("common.offer_updated"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));

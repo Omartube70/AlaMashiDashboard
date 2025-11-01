@@ -154,7 +154,7 @@
 
             var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Users/{UserId}", updateRequest);
 
-            if (response?.Success == true)
+            if (response?.Status == "success")
             {
                 Snackbar.Add(Localization.Get("common.user_updated"), Severity.Success);
                 MudDialog.Close(DialogResult.Ok(true));

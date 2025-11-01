@@ -164,7 +164,7 @@ public class ApiService
         }
     }
 
-    // ------------------- POST Multipart API Call (for file uploads) -------------------
+    // ------------------- POST Multipart API Call (for file uploads) -------------------  اضافه صور جديده
     public async Task<T?> PostMultipartAsync<T>(string url, MultipartFormDataContent content)
     {
         var token = await _tokenManager.GetAccessTokenAsync();
@@ -199,7 +199,7 @@ public class ApiService
         }
     }
 
-    // ------------------- PATCH Multipart API Call (for file uploads) -------------------
+    // ------------------- PATCH Multipart API Call (for file uploads) -------------------  تحديث صور موجوده
     public async Task<T?> PatchMultipartAsync<T>(string url, MultipartFormDataContent content)
     {
         var token = await _tokenManager.GetAccessTokenAsync();
@@ -318,7 +318,7 @@ public class ApiService
         }
     }
 
-    // ------------------- PATCH with Plain JSON (not JSON Patch) -------------------
+    // ------------------- PATCH with Plain JSON (not JSON Patch) ------------------- 
     public async Task<T?> PatchJsonAsync<T>(string url, object data)
     {
         var token = await _tokenManager.GetAccessTokenAsync();
@@ -470,7 +470,6 @@ public class ApiService
         [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
         [JsonPropertyName("data")] public T Data { get; set; } = default!;
         [JsonPropertyName("message")] public string Message { get; set; } = string.Empty;
-        [JsonPropertyName("success")] public bool Success { get; set; }
     }
 
     public class AuthResponse

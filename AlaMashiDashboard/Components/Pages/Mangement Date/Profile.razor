@@ -380,7 +380,7 @@ else
                     return;
                 }
 
-                if (response.Success == false)
+                if (response?.Status == "success")
                 {
                     Snackbar.Add(response.Message ?? Localization.Get("common.failed"), Severity.Error);
                     return;
@@ -414,7 +414,7 @@ else
                 var passwordResponse = await ApiService.PostAsync<ApiService.ApiResponse<object>>(
                     "/api/Users/change-password", changePasswordRequest);
 
-                if (passwordResponse == null || passwordResponse.Success == false)
+                if (passwordResponse == null || passwordResponse.Status != "success")
                 {
                     Snackbar.Add(passwordResponse?.Message ?? Localization.Get("common.failed"), Severity.Error);
                     return;
