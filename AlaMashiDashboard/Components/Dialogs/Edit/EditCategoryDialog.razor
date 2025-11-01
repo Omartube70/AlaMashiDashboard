@@ -111,7 +111,7 @@
                 IconName = categoryForm.IconName
             };
 
-            var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Categories/{CategoryId}", updateRequest);
+            var response = await ApiService.PatchJsonAsync<ApiService.ApiResponse<object>>($"/api/Categories/{CategoryId}", updateRequest);
 
             if (response?.Success == true)
             {
@@ -120,7 +120,8 @@
             }
             else
             {
-                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
+                var message = response?.Message ?? response?.Data?.ToString() ?? Localization.Get("common.failed");
+                Snackbar.Add(message, Severity.Error);
             }
         }
         catch (Exception ex)
@@ -137,7 +138,7 @@
 
     public class UpdateCategoryRequest
     {
-        [JsonPropertyName("newCategoryName")] public string NewCategoryName { get; set; } = string.Empty;
+        [JsonPropertyName("categoryName")] public string NewCategoryName { get; set; } = string.Empty;
         [JsonPropertyName("iconName")] public string IconName { get; set; } = string.Empty;
     }
 }

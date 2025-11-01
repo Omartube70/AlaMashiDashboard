@@ -400,7 +400,7 @@ public class ApiService
         }
     }
 
-    // دوال ForgotPassword / ResetPassword
+    // ForgotPassword / ResetPassword
     public async Task<bool> ForgotPasswordAsync(string email)
     {
         var request = new { email };
