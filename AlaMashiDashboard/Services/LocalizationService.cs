@@ -437,8 +437,8 @@ namespace AdminDashboard.Services
                     ["profile.no_changes"] = "No changes to save",
                     ["profile.cancel"] = "Cancel",
 
-                   // Orders - إضافات
-         ["orders.order_id"] = "Order ID",
+                    // Orders - إضافات
+                    ["orders.order_id"] = "Order ID",
                     ["orders.customer_name"] = "Customer Name",
                     ["orders.total_amount"] = "Total Amount",
                     ["orders.order_date"] = "Order Date",
@@ -592,6 +592,19 @@ namespace AdminDashboard.Services
                     ["error.unauthorized"] = "Unauthorized Access",
                     ["error.timeout"] = "Request Timed Out",
                     ["error.notfound"] = "Not Found",
+
+                    // Products - Additional Keys
+                    ["products.no_image"] = "No Image",
+                    ["products.image_error"] = "Failed to load image",
+                    ["products.no_description"] = "No description available",
+                    ["products.complete_info"] = "Complete Product Information",
+
+                    // Validation - Image
+                    ["validation.image_size_max"] = "Image size must not exceed 5 MB",
+                    ["validation.image_type_invalid"] = "Invalid image type. Only JPEG, PNG, and WebP are allowed",
+
+                    // Dialog - Additional
+                    ["dialog.quantity"] = "Quantity",
 
                 },
                 ["ar"] = new Dictionary<string, string>
@@ -929,7 +942,7 @@ namespace AdminDashboard.Services
                     // Addresses
                     ["addresses.home"] = "Home",
                     ["addresses.work"] = "Work",
-                    ["addresses.other"] = "Other", 
+                    ["addresses.other"] = "Other",
                     ["validation.required"] = "هذا الحقل مطلوب",
                     ["validation.min_length"] = "الحد الأدنى للطول هو {0} أحرف",
                     ["validation.max_length"] = "الحد الأقصى للطول هو {0} أحرف",
@@ -1172,6 +1185,18 @@ namespace AdminDashboard.Services
                     ["error.unauthorized"] = "دخول غير مصرح به",
                     ["error.timeout"] = "انتهت مهلة الطلب",
                     ["error.notfound"] = "العنصر غير موجود",
+
+                    ["products.no_image"] = "لا توجد صورة",
+                    ["products.image_error"] = "فشل تحميل الصورة",
+                    ["products.no_description"] = "لا يوجد وصف متاح",
+                    ["products.complete_info"] = "معلومات المنتج الكاملة",
+
+                    // Validation - Image بالعربية
+                    ["validation.image_size_max"] = "يجب ألا يتجاوز حجم الصورة 5 ميجابايت",
+                    ["validation.image_type_invalid"] = "نوع الصورة غير صالح. يُسمح فقط بـ JPEG و PNG و WebP",
+
+                    // Dialog - Additional بالعربية
+                    ["dialog.quantity"] = "الكمية",
 
                 }
             };
