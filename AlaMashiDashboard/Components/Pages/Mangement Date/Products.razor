@@ -6,6 +6,7 @@
 @using AlaMashiDashboard.Services
 @inject LocalizationService Localization
 @using AlaMashi.AdminDashboard.Components.Dialogs
+@inject IConfiguration Configuration
 
 <PageTitle>@Localization.Get("products.title")</PageTitle>
 
@@ -65,14 +66,6 @@ else if (productsList != null && productsList.Any())
                                        OnClick="LoadDataAsync"
                                        Color="Color.Primary" />
                     </MudTooltip>
-                    <MudTooltip Text="@Localization.Get("common.filter")">
-                        <MudIconButton Icon="@Icons.Material.Filled.FilterList"
-                                       Color="Color.Secondary" />
-                    </MudTooltip>
-                    <MudTooltip Text="@Localization.Get("common.export")">
-                        <MudIconButton Icon="@Icons.Material.Filled.FileDownload"
-                                       Color="Color.Info" />
-                    </MudTooltip>
                 </ToolBarContent>
 
                 <HeaderContent>
@@ -104,10 +97,10 @@ else if (productsList != null && productsList.Any())
                         <div class="d-flex align-center">
                             @if (!string.IsNullOrEmpty(context.MainImageURL))
                             {
-                                <MudAvatar Image="@context.MainImageURL"
+                                <MudAvatar Image="@GetFullImageUrl(context.MainImageURL)"
                                            Size="Size.Medium"
                                            Class="@(_isRtl ? "ml-3" : "mr-3")"
-                                           Style="border-radius: 8px;" />
+                                           Style="border-radius: 8px; border: 2px solid #e5e7eb;" />
                             }
                             else
                             {
@@ -287,7 +280,8 @@ else
 
     ::deep .mud-table-row:hover {
         background-color: rgba(16, 185, 129, 0.05) !important;
-        transform: scale(1.01);
+        transform: scale(1.005);
+        transition: all 0.2s ease;
     }
 
     @@keyframes slideInDown {
@@ -352,9 +346,11 @@ else
     private bool _isRtl => Localization.IsArabic;
     private List<ProductDto>? productsList;
     private string _searchString = "";
+    private string? _baseApiUrl;
 
     protected override async Task OnInitializedAsync()
     {
+        _baseApiUrl = Configuration["ApiBaseAddress"]?.TrimEnd('/');
         Localization.OnLanguageChanged += async () => await InvokeAsync(StateHasChanged);
     }
 
@@ -362,6 +358,19 @@ else
     {
         if (!firstRender) return;
         await LoadDataAsync();
+    }
+
+    private string GetFullImageUrl(string imageUrl)
+    {
+        if (string.IsNullOrEmpty(imageUrl)) return string.Empty;
+
+        if (imageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            imageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return imageUrl;
+        }
+
+        return $"{_baseApiUrl}/{imageUrl.TrimStart('/')}";
     }
 
     private async Task LoadDataAsync()
@@ -424,7 +433,7 @@ else
             ["ProductDescription"] = product.ProductDescription,
             ["Price"] = product.Price,
             ["QuantityInStock"] = product.QuantityInStock,
-            ["CategoryId"] = product.CategoryId, 
+            ["CategoryId"] = product.CategoryId,
             ["MainImageURL"] = product.MainImageURL
         };
 
@@ -440,10 +449,7 @@ else
             });
 
         var result = await dialog.Result;
-        if (!result.Canceled)
-        {
-            await LoadDataAsync();
-        }
+        if (!result.Canceled) await LoadDataAsync();
     }
 
     private async Task ViewProduct(ProductDto product)
@@ -484,11 +490,8 @@ else
             CategoryName = product.CategoryName,
             ImageUrl = product.MainImageURL
         };
-        
-        var parameters = new DialogParameters
-        {
-            ["Product"] = productDto
-        };
+
+        var parameters = new DialogParameters { ["Product"] = productDto };
 
         var dialog = await DialogService.ShowAsync<DeleteProductDialog>(
             Localization.Get("dialog.delete_product"),
@@ -502,12 +505,7 @@ else
             });
 
         var result = await dialog.Result;
-        
-        if (result.Canceled)
-            return;
-
-        // The dialog already handled the deletion, just reload the data
-        await LoadDataAsync();
+        if (!result.Canceled) await LoadDataAsync();
     }
 
     public class ProductDto
@@ -520,6 +518,5 @@ else
         [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
         [JsonPropertyName("productDescription")] public string ProductDescription { get; set; } = string.Empty;
         [JsonPropertyName("CategoryId")] public int CategoryId { get; set; }
-
     }
 }

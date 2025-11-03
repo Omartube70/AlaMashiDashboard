@@ -199,6 +199,74 @@ public class ApiService
         }
     }
 
+    // ------------------- GET Image as Base64 -------------------
+    public async Task<string?> GetImageAsBase64Async(string imageUrl)
+    {
+        var token = await _tokenManager.GetAccessTokenAsync();
+        if (string.IsNullOrEmpty(token))
+        {
+            _navManager.NavigateTo("/login");
+            return null;
+        }
+
+        try
+        {
+            // إذا كان الـ URL كامل (يبدأ بـ http/https)، استخدمه مباشرة
+            // إذا لا، أضف الـ base URL
+            string fullUrl = imageUrl;
+            if (!imageUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+                !imageUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                var baseUrl = _config["ApiBaseAddress"];
+                fullUrl = $"{baseUrl?.TrimEnd('/')}/{imageUrl.TrimStart('/')}";
+            }
+
+            // استخدام HttpClient مع SSL Handler
+            var handler = new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+            };
+
+            using var client = new HttpClient(handler);
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await client.GetAsync(fullUrl);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                bool refreshed = await RefreshTokenAsync();
+                if (refreshed)
+                    return await GetImageAsBase64Async(imageUrl);
+
+                _navManager.NavigateTo("/login");
+                return null;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"Failed to load image: {response.StatusCode} - {fullUrl}");
+                return null;
+            }
+
+            var imageBytes = await response.Content.ReadAsByteArrayAsync();
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "image/jpeg";
+
+            Console.WriteLine($"✅ Image loaded successfully: {fullUrl}");
+            return $"data:{contentType};base64,{Convert.ToBase64String(imageBytes)}";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ GET Image exception: {ex.Message}");
+            Console.WriteLine($"   Stack trace: {ex.StackTrace}");
+            return null;
+        }
+    }
+
+    // ------------------- Helper Method to Get Access Token -------------------
+    public async Task<string?> GetAccessTokenAsync()
+    {
+        return await _tokenManager.GetAccessTokenAsync();
+    }
     // ------------------- PATCH Multipart API Call (for file uploads) -------------------  تحديث صور موجوده
     public async Task<T?> PatchMultipartAsync<T>(string url, MultipartFormDataContent content)
     {

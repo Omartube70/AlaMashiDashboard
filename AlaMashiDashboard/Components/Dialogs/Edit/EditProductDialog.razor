@@ -4,8 +4,9 @@
 @using Microsoft.AspNetCore.Components.Forms
 @inject ISnackbar Snackbar
 @inject LocalizationService Localization
+@inject IConfiguration Configuration
 
-<MudDialog ClassActions="dialog-actions-improved" ClassContent="dialog-content-smooth">
+<MudDialog ClassActions="dialog-actions-improved">
     <TitleContent>
         <div class="d-flex align-center gap-2 pa-2">
             <MudIcon Icon="@Icons.Material.Filled.Edit" Color="Color.Info" Size="Size.Large" />
@@ -15,128 +16,147 @@
     </TitleContent>
 
     <DialogContent>
-        <MudStack Spacing="3" Style="max-height: 600px; overflow-y: auto;" Class="pa-2">
-            <MudTextField @bind-Value="productForm.ProductName"
-                          Label="@Localization.Get("dialog.product_name")"
-                          Variant="Variant.Outlined"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.ShoppingBag"
-                          Validation="@(new Func<string, IEnumerable<string>>(ValidateName))" />
+        <div style="max-height: 65vh; overflow-y: auto; padding: 16px;">
+            <MudStack Spacing="3">
 
-            <MudTextField @bind-Value="productForm.ProductDescription"
-                          Label="@Localization.Get("dialog.description")"
-                          Variant="Variant.Outlined"
-                          Lines="3"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Description"
-                          Validation="@(new Func<string, IEnumerable<string>>(ValidateDescription))" />
+                <MudTextField @bind-Value="productForm.ProductName"
+                              Label="@Localization.Get("dialog.product_name")"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.ShoppingBag"
+                              Validation="@(new Func<string, IEnumerable<string>>(ValidateName))" />
 
-            <MudNumericField @bind-Value="productForm.Price"
-                             Label="@Localization.Get("dialog.price")"
-                             Variant="Variant.Outlined"
-                             Min="0m"
-                             Adornment="Adornment.Start"
-                             AdornmentIcon="@Icons.Material.Filled.AttachMoney"
-                             Format="N2" />
+                <MudTextField @bind-Value="productForm.ProductDescription"
+                              Label="@Localization.Get("dialog.description")"
+                              Variant="Variant.Outlined"
+                              Lines="3"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Description"
+                              Validation="@(new Func<string, IEnumerable<string>>(ValidateDescription))" />
 
-            <MudNumericField @bind-Value="productForm.QuantityInStock"
-                             Label="@Localization.Get("dialog.quantity")"
-                             Variant="Variant.Outlined"
-                             Min="0"
-                             Adornment="Adornment.Start"
-                             AdornmentIcon="@Icons.Material.Filled.Inventory" />
+                <MudNumericField @bind-Value="productForm.Price"
+                                 Label="@Localization.Get("dialog.price")"
+                                 Variant="Variant.Outlined"
+                                 Min="0m"
+                                 Adornment="Adornment.Start"
+                                 AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                                 Format="N2" />
 
-            <MudSelect @bind-Value="productForm.CategoryId"
-                       Label="@Localization.Get("dialog.category")"
-                       Variant="Variant.Outlined"
-                       Adornment="Adornment.Start"
-                       AdornmentIcon="@Icons.Material.Filled.Category">
-                @if (categories != null)
+                <MudSelect @bind-Value="productForm.CategoryID"
+                           Label="@Localization.Get("dialog.category")"
+                           Variant="Variant.Outlined"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.Category">
+                    @if (categories != null)
+                    {
+                        @foreach (var cat in categories)
+                        {
+                            <MudSelectItem Value="@cat.CategoryId">@cat.CategoryName</MudSelectItem>
+                        }
+                    }
+                </MudSelect>
+
+                <MudDivider Class="my-2" />
+
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                    <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
+                    @Localization.Get("products.image")
+                </MudText>
+
+                @* عرض الصورة الحالية *@
+                @if (!string.IsNullOrEmpty(MainImageURL) && selectedFile == null)
                 {
-                    @foreach (var cat in categories)
-                    {
-                        <MudSelectItem Value="@cat.CategoryId">@cat.CategoryName</MudSelectItem>
-                    }
+                    <MudCard Elevation="2" Outlined="true" Class="mb-3" Style="border-radius: 12px; overflow: hidden;">
+                        <MudCardContent Class="pa-3">
+                            <div style="position: relative;">
+                                @if (_imageLoadError)
+                                {
+                                    <div style="width: 100%; height: 200px; background: #f8fafc; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                                        <div class="text-center">
+                                            <MudIcon Icon="@Icons.Material.Filled.BrokenImage" Size="Size.Large" Color="Color.Error" Style="font-size: 3rem; opacity: 0.5;" />
+                                            <MudText Typo="Typo.body2" Color="Color.Error" Class="mt-2">فشل تحميل الصورة</MudText>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <img src="@GetFullImageUrl()"
+                                         alt="@ProductName"
+                                         style="width: 100%; height: 200px; object-fit: contain; border-radius: 8px; background: #f8fafc;"
+                                         @onerror="HandleImageError" />
+                                }
+                            </div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2 d-flex align-center gap-1">
+                                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Color="Color.Success" />
+                                @Localization.Get("products.current_image")
+                            </MudText>
+                        </MudCardContent>
+                    </MudCard>
                 }
-            </MudSelect>
 
-            <MudDivider Class="my-2" />
+                @* رفع صورة جديدة *@
+                <MudFileUpload T="IBrowserFile"
+                               FilesChanged="OnFileSelected"
+                               Accept="image/jpeg,image/jpg,image/png,image/webp">
+                    <ButtonTemplate>
+                        <MudButton HtmlTag="label"
+                                   Variant="Variant.Outlined"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.CloudUpload"
+                                   for="@context"
+                                   FullWidth="true">
+                            @(selectedFileName ?? Localization.Get("products.change_image"))
+                        </MudButton>
+                    </ButtonTemplate>
+                </MudFileUpload>
 
-            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
-                <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Small" Class="@(_isRtl ? "ml-1" : "mr-1")" />
-                @Localization.Get("products.image")
-            </MudText>
+                @if (!string.IsNullOrEmpty(selectedFileName))
+                {
+                    <MudChip Color="Color.Success"
+                             Icon="@Icons.Material.Filled.CheckCircle"
+                             OnClose="ClearSelectedFile"
+                             Size="Size.Medium">
+                        @selectedFileName
+                    </MudChip>
+                }
 
-            @if (!string.IsNullOrEmpty(productForm.MainImageURL))
-            {
-                <MudCard Elevation="0" Outlined="true" Class="mb-3">
-                    <MudCardContent Class="pa-2">
-                        <MudImage Src="@productForm.MainImageURL" 
-                                  Alt="@productForm.ProductName"
-                                  Height="200" 
-                                  ObjectFit="ObjectFit.Contain"
-                                  Class="rounded" />
-                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
-                            @Localization.Get("products.current_image")
-                        </MudText>
-                    </MudCardContent>
-                </MudCard>
-            }
+                @if (validationErrors.Any())
+                {
+                    <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+                        @foreach (var error in validationErrors)
+                        {
+                            <div class="d-flex align-center gap-1">
+                                <MudIcon Icon="@Icons.Material.Filled.Error" Size="Size.Small" />
+                                @error
+                            </div>
+                        }
+                    </MudAlert>
+                }
 
-            <MudFileUpload T="IBrowserFile" 
-                           FilesChanged="OnFileSelected"
-                           Accept="image/*">
-                <ButtonTemplate>
-                    <MudButton HtmlTag="label"
-                               Variant="Variant.Outlined"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.CloudUpload"
-                               for="@context">
-                        @(selectedFileName ?? Localization.Get("products.change_image"))
-                    </MudButton>
-                </ButtonTemplate>
-            </MudFileUpload>
-
-            @if (!string.IsNullOrEmpty(selectedFileName))
-            {
-                <MudChip Color="Color.Success" 
-                         Icon="@Icons.Material.Filled.CheckCircle"
-                         OnClose="ClearSelectedFile">
-                    @selectedFileName
-                </MudChip>
-            }
-
-            @if (validationErrors.Any())
-            {
-                <MudAlert Severity="Severity.Error" Variant="Variant.Outlined">
-                    @foreach (var error in validationErrors)
-                    {
-                        <div>• @error</div>
-                    }
-                </MudAlert>
-            }
-        </MudStack>
+            </MudStack>
+        </div>
     </DialogContent>
 
     <DialogActions>
         <MudStack Row="true" Spacing="2" Class="pa-2" Style="width:100%;" Justify="Justify.FlexEnd">
-            <MudButton OnClick="Cancel" 
-                       Variant="Variant.Outlined" 
+            <MudButton OnClick="Cancel"
+                       Variant="Variant.Outlined"
                        Color="Color.Default"
                        StartIcon="@Icons.Material.Filled.Close"
-                       Size="Size.Medium">
+                       Size="Size.Medium"
+                       Disabled="@isSubmitting">
                 @Localization.Get("common.cancel")
             </MudButton>
-            <MudButton OnClick="Submit" 
-                       Variant="Variant.Filled" 
-                       Color="Color.Info" 
-                       Disabled="@isSubmitting" 
-                       StartIcon="@Icons.Material.Filled.Save"
+            <MudButton OnClick="Submit"
+                       Variant="Variant.Filled"
+                       Color="Color.Info"
+                       Disabled="@isSubmitting"
+                       StartIcon="@(isSubmitting ? null : Icons.Material.Filled.Save)"
                        Size="Size.Medium"
                        Class="px-6">
                 @if (isSubmitting)
                 {
-                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="@(_isRtl ? "ml-2" : "mr-2")" />
                     <span>@Localization.Get("dialog.updating")</span>
                 }
                 else
@@ -154,8 +174,8 @@
     [Parameter] public string ProductName { get; set; } = string.Empty;
     [Parameter] public string ProductDescription { get; set; } = string.Empty;
     [Parameter] public decimal Price { get; set; }
-    [Parameter] public int QuantityInStock { get; set; }
     [Parameter] public int CategoryId { get; set; }
+    [Parameter] public int QuantityInStock { get; set; }
     [Parameter] public string MainImageURL { get; set; } = string.Empty;
 
     private UpdateProductForm productForm = new();
@@ -165,31 +185,76 @@
     private IBrowserFile? selectedFile;
     private string? selectedFileName;
     private bool _isRtl => Localization.IsArabic;
+    private string? _baseApiUrl;
+    private bool _imageLoadError = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _baseApiUrl = Configuration["ApiBaseAddress"]?.TrimEnd('/');
+
+        productForm = new UpdateProductForm
+        {
+            ProductName = ProductName,
+            ProductDescription = ProductDescription,
+            Price = Price,
+            CategoryID = CategoryId
+        };
+
+        await LoadCategories();
+    }
+
+    /// <summary>
+    /// بناء رابط الصورة مباشرة من Backend
+    /// </summary>
+    private string GetFullImageUrl()
+    {
+        if (string.IsNullOrEmpty(MainImageURL))
+            return string.Empty;
+
+        if (MainImageURL.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            MainImageURL.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return MainImageURL;
+        }
+
+        return $"{_baseApiUrl}/{MainImageURL.TrimStart('/')}";
+    }
+
+    private void HandleImageError(ErrorEventArgs args)
+    {
+        _imageLoadError = true;
+        Console.WriteLine($"❌ Error loading image: {GetFullImageUrl()}");
+        StateHasChanged();
+    }
 
     private void OnFileSelected(IBrowserFile file)
     {
         selectedFile = file;
         selectedFileName = file.Name;
+        ValidateImage(file);
+    }
+
+    private void ValidateImage(IBrowserFile file)
+    {
+        validationErrors.RemoveAll(e => e.Contains("image") || e.Contains("صورة"));
+
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            validationErrors.Add(Localization.Get("validation.image_size_max"));
+        }
+
+        var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/webp" };
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+        {
+            validationErrors.Add(Localization.Get("validation.image_type_invalid"));
+        }
     }
 
     private void ClearSelectedFile()
     {
         selectedFile = null;
         selectedFileName = null;
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        productForm = new UpdateProductForm
-        {
-            ProductName = ProductName,
-            ProductDescription = ProductDescription,
-            Price = Price,
-            QuantityInStock = QuantityInStock,
-            CategoryId = CategoryId,
-            MainImageURL = MainImageURL
-        };
-        await LoadCategories();
+        validationErrors.RemoveAll(e => e.Contains("image") || e.Contains("صورة"));
     }
 
     private async Task LoadCategories()
@@ -202,28 +267,12 @@
         catch { }
     }
 
-    public class UpdateProductForm
-    {
-        public string ProductName { get; set; } = string.Empty;
-        public string ProductDescription { get; set; } = string.Empty;
-        public decimal Price { get; set; }
-        public int QuantityInStock { get; set; }
-        public int CategoryId { get; set; }
-        public string MainImageURL { get; set; } = string.Empty;
-    }
-
-    public class CategoryOption
-    {
-        [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
-        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
-    }
-
     private IEnumerable<string> ValidateName(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
             yield return Localization.Get("validation.required");
-        else if (name.Length < 3 || name.Length > 100)
-            yield return Localization.Get("validation.between_chars").Replace("{0}", "3").Replace("{1}", "100");
+        else if (name.Length < 3 || name.Length > 200)
+            yield return Localization.Get("validation.between_chars").Replace("{0}", "3").Replace("{1}", "200");
     }
 
     private IEnumerable<string> ValidateDescription(string desc)
@@ -237,8 +286,21 @@
     private void ValidateForm()
     {
         validationErrors.Clear();
-        validationErrors.AddRange(ValidateName(productForm.ProductName));
-        validationErrors.AddRange(ValidateDescription(productForm.ProductDescription));
+
+        if (!string.IsNullOrEmpty(productForm.ProductName))
+        {
+            validationErrors.AddRange(ValidateName(productForm.ProductName));
+        }
+
+        if (!string.IsNullOrEmpty(productForm.ProductDescription))
+        {
+            validationErrors.AddRange(ValidateDescription(productForm.ProductDescription));
+        }
+
+        if (productForm.Price.HasValue && productForm.Price <= 0)
+        {
+            validationErrors.Add(Localization.Get("validation.price_positive"));
+        }
     }
 
     private async Task Submit()
@@ -249,55 +311,37 @@
         isSubmitting = true;
         try
         {
-            // إذا في صورة جديدة، نستخدم MultipartFormData
+            using var content = new MultipartFormDataContent();
+
+            if (!string.IsNullOrEmpty(productForm.ProductName))
+                content.Add(new StringContent(productForm.ProductName), "ProductName");
+
+            if (!string.IsNullOrEmpty(productForm.ProductDescription))
+                content.Add(new StringContent(productForm.ProductDescription), "ProductDescription");
+
+            if (productForm.Price.HasValue)
+                content.Add(new StringContent(productForm.Price.Value.ToString()), "Price");
+
+            if (productForm.CategoryID.HasValue)
+                content.Add(new StringContent(productForm.CategoryID.Value.ToString()), "CategoryID");
+
             if (selectedFile != null)
             {
-                using var content = new MultipartFormDataContent();
-                content.Add(new StringContent(productForm.ProductName), "productName");
-                content.Add(new StringContent(productForm.ProductDescription), "productDescription");
-                content.Add(new StringContent(productForm.Price.ToString()), "price");
-                content.Add(new StringContent(productForm.QuantityInStock.ToString()), "quantityInStock");
-                content.Add(new StringContent(productForm.CategoryId.ToString()), "categoryId");
-
                 var fileContent = new StreamContent(selectedFile.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024));
                 fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(selectedFile.ContentType);
                 content.Add(fileContent, "ProductImageFile", selectedFile.Name);
+            }
 
-                var response = await ApiService.PatchMultipartAsync<ApiService.ApiResponse<object>>($"/api/Products/{ProductID}", content);
+            var response = await ApiService.PatchMultipartAsync<ApiService.ApiResponse<object>>($"/api/Products/{ProductID}", content);
 
-                if (response?.Status == "success")
-                {
-                    Snackbar.Add(Localization.Get("common.product_updated"), Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(true));
-                }
-                else
-                {
-                    Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
-                }
+            if (response?.Status == "success")
+            {
+                Snackbar.Add(Localization.Get("common.product_updated"), Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
             }
             else
             {
-                // إذا ما فيش صورة جديدة، نستخدم PATCH عادي
-                var updateRequest = new
-                {
-                    productName = productForm.ProductName,
-                    productDescription = productForm.ProductDescription,
-                    price = productForm.Price,
-                    quantityInStock = productForm.QuantityInStock,
-                    categoryId = productForm.CategoryId
-                };
-
-                var response = await ApiService.PatchAsync<ApiService.ApiResponse<object>>($"/api/Products/{ProductID}", updateRequest);
-
-                 if (response?.Status == "success")
-                {
-                    Snackbar.Add(Localization.Get("common.product_updated"), Severity.Success);
-                    MudDialog.Close(DialogResult.Ok(true));
-                }
-                else
-                {
-                    Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
-                }
+                Snackbar.Add(response?.Message ?? Localization.Get("common.failed"), Severity.Error);
             }
         }
         catch (Exception ex)
@@ -311,4 +355,18 @@
     }
 
     private void Cancel() => MudDialog.Cancel();
+
+    public class UpdateProductForm
+    {
+        public string? ProductName { get; set; }
+        public string? ProductDescription { get; set; }
+        public decimal? Price { get; set; }
+        public int? CategoryID { get; set; }
+    }
+
+    public class CategoryOption
+    {
+        [JsonPropertyName("categoryId")] public int CategoryId { get; set; }
+        [JsonPropertyName("categoryName")] public string CategoryName { get; set; } = string.Empty;
+    }
 }
